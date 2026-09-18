@@ -1,0 +1,584 @@
+/*
+ * 轻言 Qingyan — 后台样式
+ *
+ * 所有类名以 qya- 前缀，避免与 Typecho 后台自带样式冲突。
+ * 只作用于面板内部，不影响后台其他页面。
+ *
+ * 变量集中在 .qya-scope 上，方便按需覆盖。
+ */
+
+.qya-scope {
+    /*
+     * 全部改为引用 AdminDark 的调色板变量，第二个参数是原值兜底：
+     *   · AdminDark 未启用 → 变量未定义 → 用原值，外观与以前完全一致
+     *   · 深色档        → 自动跟随当前配色方案；换配色只改 AdminDark 一处
+     * 所以本文件不需要任何 html[data-admin-dark] 分支。
+     */
+    --qya-accent: var(--ad-accent, #467b96);
+    --qya-ok: var(--ad-ok, #46a05a);
+    --qya-warn: var(--ad-warn, #e6a23c);
+    --qya-danger: var(--ad-danger, #c0392b);
+    --qya-line: var(--ad-line, #e3e6ea);
+    --qya-muted: var(--ad-fg-faint, #999);
+
+    /* 顺手补上：--qya-radius 被引用了 3 次却一直没有定义 */
+    --qya-radius: var(--ad-radius, 4px);
+}
+
+/* ---------- 头部条（在 typecho-page-title 之外，独立一行） ---------- */
+
+.qya-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 0 14px;
+    padding: 10px 14px;
+    background: var(--ad-surface, #fff);
+    border: 1px solid var(--qya-line);
+    border-radius: var(--qya-radius);
+    font-size: 13px;
+    color: var(--qya-muted);
+}
+
+.qya-head-item {
+    margin-right: auto;
+}
+
+.qya-head a {
+    color: var(--qya-muted);
+    text-decoration: none;
+}
+
+.qya-head a:hover {
+    color: var(--qya-accent);
+}
+
+.qya-head-btn {
+    display: inline-block;
+    padding: 4px 12px;
+    border: 1px solid var(--qya-line);
+    border-radius: 4px;
+    background: var(--ad-surface, #fff);
+    color: var(--qya-text) !important;
+    text-decoration: none;
+    transition: all .15s;
+}
+
+.qya-head-btn:hover {
+    border-color: var(--qya-accent);
+    color: var(--qya-accent) !important;
+}
+
+/* 状态标签 */
+
+.qya-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    background: var(--ad-fill, rgba(128, 128, 128, .14));
+    color: var(--ad-fg-faint, #888);
+}
+
+.qya-tag.is-ok {
+    background: var(--ad-ok-bg, #eaf6ec);
+    color: var(--qya-ok);
+}
+
+.qya-tag.is-wait {
+    background: var(--ad-warn-bg, #fdf3e7);
+    color: var(--ad-warn, #d98b25);
+}
+
+/* 操作列：链接与表单按钮同一行 */
+
+.qya-ops {
+    white-space: nowrap;
+}
+
+.qya-ops a,
+.qya-ops .qy-linkbtn {
+    font-size: 12px;
+}
+
+/* ---------- 区块标题 ---------- */
+
+.qya-title {
+    margin: 0;
+}
+
+/* ---------- 提示条 ---------- */
+
+.qya-notice {
+    margin: 0;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    font-size: 13px;
+}
+
+.qya-notice.is-ok {
+    background: var(--ad-ok-bg, #f0f9eb);
+    color: var(--qya-ok);
+    border-color: var(--ad-ok-line, #e1f3d8);
+}
+
+.qya-notice.is-error {
+    background: var(--ad-danger-bg, #fef0f0);
+    color: var(--ad-danger, #f56c6c);
+    border-color: var(--ad-danger-line, #fde2e2);
+}
+
+/* ---------- 统计卡片 ---------- */
+
+.qya-stats {
+    display: flex;
+    flex-wrap: nowrap;          /* 保持一整行，不换行 */
+    gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 14px 16px;
+    list-style: none;
+    background: var(--ad-surface, #fff);
+    border: 1px solid var(--qya-line);
+    border-radius: var(--qya-radius);
+}
+
+.qya-stat {
+    flex: 1 1 0;                /* 等分整行 */
+    min-width: 0;               /* 允许收缩，避免溢出换行 */
+    border: 1px solid var(--qya-line);
+    border-radius: 6px;
+    padding: 10px 12px;
+    text-align: center;
+}
+
+/* 窄屏才允许换行，避免挤成一团 */
+@media (max-width: 700px) {
+    .qya-stats {
+        flex-wrap: wrap;
+    }
+
+    .qya-stat {
+        flex: 1 1 90px;
+    }
+}
+
+.qya-stat-num {
+    display: block;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.qya-stat-label {
+    color: var(--qya-muted);
+    font-size: 12px;
+}
+
+/* ---------- 表单 ---------- */
+
+.qya-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: flex-end;
+}
+
+.qya-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.qya-label {
+    font-size: 12px;
+    color: var(--qya-muted);
+}
+
+.qya-textarea {
+    height: 120px;
+}
+
+.qya-form-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ---------- 筛选条 ---------- */
+
+.qya-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+/* ---------- 表格 ---------- */
+
+.qya-pad {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    background: var(--ad-surface, #fff);
+    border: 1px solid var(--qya-line);
+    border-radius: var(--qya-radius);
+}
+
+/* 发布按钮 + 状态 + 时间：同一行，顺序为 actions → field → field */
+.qya-form-row {
+    display: flex !important;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+
+.qya-field > label {
+    line-height: 30px !important;   /* 与控件等高，保证垂直居中 */
+}
+
+/* 宽度 200px 是内联样式，用 min-width 兜住但不让它撑破布局 */
+.qya-field > input[type="text"] {
+    width: 250px;
+    max-width: 250px;
+}
+
+/* 顺序：actions 在最前，视觉上就是「发布 → 状态 → 时间」 */
+.qya-form-actions {
+    margin-left: auto;
+}
+
+/* 表单控件统一高度，避免与 label 错位 */
+.qya-field select,
+.qya-field input[type="text"] {
+    height: 30px;
+    box-sizing: border-box;
+}
+
+.qya-inline {
+    display: inline;
+}
+
+.qya-note {
+    margin: 0;
+    color: var(--qya-muted);
+    font-size: 12px;
+}
+
+.qya-note-warn {
+    margin: 0;
+    color: var(--qya-warn);
+    font-size: 12px;
+}
+
+.qya-danger-text {
+    color: var(--qya-danger);
+}
+
+.qya-content-cell {
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+/*
+ * 正文/评论里的 Markdown 块级元素（列表、表格、代码块、引用、标题、水平线）
+ *
+ * 内容由 Model::format() 用 Typecho 的 HyperDown 生成（2.8.0 起），
+ * 后台这一侧只加载 admin.css，所以这里要单独补一套 —— 否则表格没有边框、
+ * 代码块没有底色，在面板里会显得像没渲染。
+ * 尺寸按后台表格的宽度收紧，比前台更紧凑。
+ */
+.qya-content-cell > :first-child,
+.qya-comment-text > :first-child {
+    margin-top: 0;
+}
+
+.qya-content-cell > :last-child,
+.qya-comment-text > :last-child {
+    margin-bottom: 0;
+}
+
+.qya-content-cell p,
+.qya-comment-text p {
+    margin: 0 0 .5em;
+}
+
+.qya-content-cell p:last-child,
+.qya-comment-text p:last-child {
+    margin-bottom: 0;
+}
+
+.qya-content-cell ul,
+.qya-content-cell ol,
+.qya-comment-text ul,
+.qya-comment-text ol {
+    margin: .35em 0;
+    padding-left: 1.3em;
+}
+
+.qya-content-cell li > p,
+.qya-comment-text li > p {
+    margin: 0 0 .25em;
+}
+
+.qya-content-cell li > p:last-child,
+.qya-comment-text li > p:last-child {
+    margin-bottom: 0;
+}
+
+.qya-content-cell blockquote,
+.qya-comment-text blockquote {
+    margin: .4em 0;
+    padding: 4px 10px;
+    border-left: 3px solid var(--qya-line);
+    background: var(--ad-surface-alt, rgba(128, 128, 128, .06));
+    color: var(--qya-muted);
+}
+
+.qya-content-cell code,
+.qya-comment-text code {
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--ad-surface-alt, rgba(128, 128, 128, .1));
+    font-size: .92em;
+}
+
+.qya-content-cell pre,
+.qya-comment-text pre {
+    margin: .4em 0;
+    padding: 8px 10px;
+    overflow-x: auto;
+    border: 1px solid var(--qya-line);
+    border-radius: var(--qya-radius);
+    background: var(--ad-surface-alt, rgba(128, 128, 128, .06));
+    white-space: pre;
+    font-size: .9em;
+}
+
+.qya-content-cell pre code,
+.qya-comment-text pre code {
+    padding: 0;
+    background: none;
+    font-size: inherit;
+}
+
+.qya-content-cell table,
+.qya-comment-text table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    margin: .4em 0;
+    overflow-x: auto;
+    border-collapse: collapse;
+    white-space: normal;
+    font-size: .95em;
+}
+
+.qya-content-cell th,
+.qya-content-cell td,
+.qya-comment-text th,
+.qya-comment-text td {
+    padding: 3px 8px;
+    border: 1px solid var(--qya-line);
+    text-align: left;
+}
+
+.qya-content-cell th,
+.qya-comment-text th {
+    background: var(--ad-surface-alt, rgba(128, 128, 128, .08));
+    font-weight: 600;
+}
+
+.qya-content-cell h1,
+.qya-content-cell h2,
+.qya-content-cell h3,
+.qya-content-cell h4,
+.qya-content-cell h5,
+.qya-content-cell h6,
+.qya-comment-text h1,
+.qya-comment-text h2,
+.qya-comment-text h3,
+.qya-comment-text h4,
+.qya-comment-text h5,
+.qya-comment-text h6 {
+    margin: .6em 0 .3em;
+    font-size: 1em;
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.qya-content-cell hr,
+.qya-comment-text hr {
+    margin: .6em 0;
+    border: 0;
+    border-top: 1px solid var(--qya-line);
+}
+
+.qya-comment-text del,
+.qya-content-cell del {
+    color: var(--qya-muted);
+}
+
+/* 话题链接（#标签# → 站内搜索）：别再带一条下划线，悬停给点底色 */
+.qya-content-cell a.qy-topic,
+.qya-comment-text a.qy-topic {
+    color: var(--qya-accent);
+    padding: 0 2px;
+    border-radius: 3px;
+    text-decoration: none;
+}
+
+.qya-content-cell a.qy-topic:hover,
+.qya-comment-text a.qy-topic:hover {
+    background: var(--ad-accent-soft, rgba(70, 123, 150, .12));
+    text-decoration: none;
+}
+
+.qya-status-pending {
+    color: var(--qya-warn);
+    font-size: 12px;
+}
+
+/* ---------- 批量操作条 ---------- */
+
+.qya-bulk {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.qya-bulk-right {
+    float: right;
+    font-size: 12px;
+}
+
+/* ---------- 评分/字数 ---------- */
+
+.qya-mono {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ---------- 空状态 ---------- */
+
+.qya-empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--qya-muted);
+}
+
+/* ---------- 表单里的链接式按钮 ---------- */
+
+.qy-linkbtn {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ad-accent, #467b96);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.qy-linkbtn:hover {
+    text-decoration: underline;
+}
+
+.qy-linkbtn.qya-danger-text {
+    color: var(--qya-danger);
+}
+
+/* ============================================================
+   心情（替代头像）
+   ------------------------------------------------------------
+   轻言的发布者只有站长自己，展示 Gravatar 没有信息量，
+   于是卡片左侧那个位置改成一个「心情徽章」：发布时选，展示时读。
+   ============================================================ */
+
+/* 草稿状态标签（以前 pending/draft 直接显示英文，现在都有中文） */
+.qya-tag.is-draft {
+    background: var(--ad-fill, rgba(128, 128, 128, .14));
+    color: var(--qya-muted);
+}
+
+/* 发布框里的心情选择 */
+.qya-moods {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 12px 0 2px;
+}
+
+.qya-moods-title {
+    flex: 0 0 auto;
+    font-size: 12px;
+    line-height: 30px;
+    color: var(--qya-muted);
+}
+
+.qya-moods-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.qya-mood {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: 1px solid var(--qya-line);
+    border-radius: 15px;
+    font-size: 12px;
+    line-height: 1.6;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .15s, background .15s;
+}
+
+/* radio 藏起来但保留键盘可聚焦 */
+.qya-mood input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.qya-mood:hover {
+    border-color: var(--qya-ok);
+}
+
+.qya-mood:has(input:checked) {
+    border-color: var(--qya-ok);
+    background: var(--ad-ok-bg, #eaf6ec);
+    color: var(--qya-ok);
+    font-weight: 600;
+}
+
+.qya-mood-ico {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 列表里内容前的那个小角标（头像或心情图） */
+.qya-mood-badge {
+    width: 16px;
+    height: 16px;
+    margin-right: 6px;
+    border-radius: 50%;
+    object-fit: cover;
+    vertical-align: -3px;
+}

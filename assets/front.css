@@ -1,0 +1,252 @@
+/*!
+ * 轻言 Qingyan — 独立前台页面外壳样式（/qingyan）
+ *
+ * 只在路由访问独立页时加载；嵌入主题模式不引入本文件。
+ * 组件（时间线、卡片、评论…）的样式在 qingyan.css，这里只管「页面外壳」：
+ * 背景、居中容器、页头、页脚、深色模式、响应式。
+ *
+ * ⚠️ 类名一律用 `qy-standalone*` 前缀，**故意避开 `qy-page`**。
+ *    qingyan.css 里的 `.qy-page` 是分页页码（inline-flex / 32px 高的小方块），
+ *    早期外壳也叫 `qy-page`，两个撞在一起 —— 整页被当成一个 32px 的
+ *    inline-flex 横排，标题、列表、页脚并排挤成一团（2026-09-15 修）。
+ *    以后给外壳加类名，也请继续用 `qy-standalone` 前缀。
+ */
+
+/* ---------------------------------------------------------------- */
+/* 变量：与 qingyan.css 的 --qy-* 分开命名，各自独立                  */
+/* ---------------------------------------------------------------- */
+
+.qy-standalone-body {
+    --qy-s-bg: #f4f5f7;
+    --qy-s-fg: #23262b;
+    --qy-s-muted: #8a9099;
+    --qy-s-line: rgba(128, 128, 128, .16);
+    --qy-s-accent: #467b96;
+    --qy-s-width: 720px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .qy-standalone-body {
+        --qy-s-bg: #101216;
+        --qy-s-fg: #d8dde3;
+        --qy-s-muted: #8b939d;
+        --qy-s-line: rgba(255, 255, 255, .1);
+        --qy-s-accent: #5aa1c4;
+    }
+}
+
+/* ---------------------------------------------------------------- */
+/* 基础重置：独立页没有主题的 reset，这里自己来                        */
+/* ---------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    /* 移动端旋转屏幕时不放大字号 */
+    -webkit-text-size-adjust: 100%;
+}
+
+.qy-standalone-body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    background: var(--qy-s-bg);
+    color: var(--qy-s-fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 独立页里的图片不该撑破容器（组件自己会再收一次） */
+.qy-standalone img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 链接颜色兜底；具体观感由各组件决定 */
+.qy-standalone a {
+    color: var(--qy-s-accent);
+}
+
+/* ---------------------------------------------------------------- */
+/* 居中容器：整页只有这一列                                           */
+/* ---------------------------------------------------------------- */
+
+.qy-standalone {
+    display: block;                 /* 明确写死：绝不能被继承成 flex / inline-flex */
+    width: 100%;
+    max-width: var(--qy-s-width);
+    margin: 0 auto;
+    padding: 0 20px 72px;
+}
+
+/* ---------------------------------------------------------------- */
+/* 页头                                                              */
+/* ---------------------------------------------------------------- */
+
+.qy-standalone__head {
+    padding: 56px 0 26px;
+    text-align: center;
+    border-bottom: 1px solid var(--qy-s-line);
+    margin-bottom: 26px;
+}
+
+.qy-standalone__title {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: .5px;
+    line-height: 1.35;
+}
+
+.qy-standalone__desc {
+    margin: 8px 0 0;
+    color: var(--qy-s-muted);
+    font-size: 14px;
+}
+
+.qy-standalone__nav {
+    margin-top: 14px;
+}
+
+.qy-standalone__nav a {
+    display: inline-block;
+    color: var(--qy-s-muted);
+    font-size: 13px;
+    text-decoration: none;
+    padding: 3px 10px;
+    border: 1px solid var(--qy-s-line);
+    border-radius: 999px;
+    transition: color .15s, border-color .15s;
+}
+
+.qy-standalone__nav a:hover {
+    color: var(--qy-s-accent);
+    border-color: var(--qy-s-accent);
+}
+
+/* 轻言自己的搜索框（?q=关键词）—— 只搜轻言内容；
+   想搜全站文章用站点的搜索框，或点结果页里那个「也在文章里搜」 */
+.qy-standalone__search {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.qy-standalone__search input[type="search"],
+.qy-standalone__search input[type="text"] {
+    width: 100%;
+    max-width: 260px;
+    padding: 6px 12px;
+    border: 1px solid var(--qy-s-line);
+    border-radius: 999px;
+    background: var(--qy-s-input-bg, rgba(128, 128, 128, .06));
+    color: var(--qy-s-fg, inherit);
+    font: inherit;
+    font-size: 13px;
+}
+
+.qy-standalone__search input[type="search"]:focus {
+    outline: none;
+    border-color: var(--qy-s-accent);
+}
+
+.qy-standalone__search button {
+    padding: 6px 16px;
+    border: 1px solid var(--qy-s-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--qy-s-muted);
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+}
+
+.qy-standalone__search button:hover {
+    color: var(--qy-s-accent);
+    border-color: var(--qy-s-accent);
+}
+
+/* ---------------------------------------------------------------- */
+/* 主体                                                              */
+/* ---------------------------------------------------------------- */
+
+.qy-standalone__main {
+    display: block;
+    min-height: 180px;
+}
+
+/* 分页条与列表之间的呼吸感（组件自带 margin-top，这里只做兜底） */
+.qy-standalone__main .qy-pager {
+    margin-top: 26px;
+}
+
+/* ---------------------------------------------------------------- */
+/* 页脚                                                              */
+/* ---------------------------------------------------------------- */
+
+.qy-standalone__foot {
+    margin-top: 52px;
+    padding-top: 22px;
+    border-top: 1px solid var(--qy-s-line);
+    text-align: center;
+    color: var(--qy-s-muted);
+    font-size: 12px;
+    line-height: 1.9;
+}
+
+.qy-standalone__foot p {
+    margin: 0;
+}
+
+.qy-standalone__foot a {
+    color: var(--qy-s-muted);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color .15s, border-color .15s;
+}
+
+.qy-standalone__foot a:hover {
+    color: var(--qy-s-accent);
+    border-bottom-color: currentColor;
+}
+
+/* ---------------------------------------------------------------- */
+/* 响应式                                                            */
+/* ---------------------------------------------------------------- */
+
+@media (max-width: 560px) {
+    .qy-standalone {
+        padding: 0 14px 56px;
+    }
+
+    .qy-standalone__head {
+        padding: 34px 0 20px;
+        margin-bottom: 20px;
+    }
+
+    .qy-standalone__title {
+        font-size: 22px;
+    }
+
+    .qy-standalone__foot {
+        margin-top: 40px;
+    }
+}
+
+/* 打印：去掉底色，别浪费墨水 */
+@media print {
+    .qy-standalone-body {
+        background: #fff;
+        color: #000;
+    }
+}

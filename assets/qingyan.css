@@ -1,0 +1,1076 @@
+/*!
+ * 轻言 Qingyan — 前台样式
+ *
+ * 设计原则：
+ *   1. 全部走 CSS 变量，主题可一处覆盖整套配色
+ *   2. 支持 prefers-color-scheme 深色模式
+ *   3. 类名统一 qy- 前缀，不与主题打架
+ *   4. 移动端优先的响应式
+ *
+ * 想改配色只需覆盖变量，例如：
+ *   .qy-embed { --qy-accent: #e9546b; }
+ */
+
+.qy-embed {
+    /* ---------- 配色 ---------- */
+    --qy-bg: transparent;
+    --qy-card: #fff;
+    --qy-fg: #23262b;
+    --qy-muted: #8a9099;
+    --qy-faint: #a8adb5;
+    --qy-accent: #467b96;
+    --qy-accent-soft: rgba(70, 123, 150, .1);
+    --qy-like: #e9546b;
+    --qy-line: rgba(128, 128, 128, .14);
+    --qy-line-strong: rgba(128, 128, 128, .24);
+    --qy-input-bg: rgba(128, 128, 128, .06);
+    --qy-danger: #c0392b;
+    --qy-ok: #46a05a;
+
+    /* ---------- 尺寸 ---------- */
+    --qy-radius: 12px;
+    --qy-radius-sm: 8px;
+    --qy-gap: 14px;
+
+    position: relative;
+    max-width: 100%;
+    color: var(--qy-fg);
+    font-size: 15px;
+    line-height: 1.7;
+    -webkit-text-size-adjust: 100%;
+}
+
+.qy-embed *,
+.qy-embed *::before,
+.qy-embed *::after {
+    box-sizing: border-box;
+}
+
+/* ================================================================== */
+/* 发布框                                                              */
+/* ================================================================== */
+
+.qy-editor {
+    margin: 0 0 24px;
+    padding: 16px;
+    border: 1px solid var(--qy-line);
+    border-radius: var(--qy-radius);
+    background: var(--qy-card);
+}
+
+.qy-editor-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.qy-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--qy-accent-soft);
+    color: var(--qy-accent);
+    font-size: 12px;
+    line-height: 1.8;
+}
+
+.qy-hint {
+    color: var(--qy-faint);
+    font-size: 12px;
+}
+
+.qy-hint code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--qy-input-bg);
+    font-size: 11px;
+}
+
+.qy-textarea {
+    display: block;
+    width: 100%;
+    min-height: 84px;
+    padding: 10px 12px;
+    border: 1px solid var(--qy-line);
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-input-bg);
+    color: var(--qy-fg);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.7;
+    resize: vertical;
+    transition: border-color .15s, background .15s;
+}
+
+.qy-textarea:focus {
+    outline: none;
+    border-color: var(--qy-accent);
+    background: var(--qy-card);
+}
+
+.qy-textarea::placeholder {
+    color: var(--qy-faint);
+}
+
+.qy-textarea-sm {
+    min-height: 60px;
+}
+
+.qy-input {
+    display: block;
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--qy-line);
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-input-bg);
+    color: var(--qy-fg);
+    font: inherit;
+    font-size: 13px;
+    transition: border-color .15s, background .15s;
+}
+
+.qy-input:focus {
+    outline: none;
+    border-color: var(--qy-accent);
+    background: var(--qy-card);
+}
+
+.qy-input-sm {
+    font-size: 13px;
+}
+
+.qy-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.qy-row > * {
+    flex: 1 1 140px;
+    min-width: 0;
+}
+
+/* 工具条：字数 + 表情 + 发布按钮 */
+.qy-editor-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.qy-editor-bar .qy-msg {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.qy-counter {
+    flex: 1 1 auto;
+    color: var(--qy-faint);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+/* ================================================================== */
+/* 按钮                                                                */
+/* ================================================================== */
+
+.qy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 16px;
+    border: 1px solid var(--qy-line-strong);
+    border-radius: var(--qy-radius-sm);
+    background: transparent;
+    color: var(--qy-fg);
+    font: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s, border-color .15s, opacity .15s;
+}
+
+.qy-btn:hover {
+    border-color: var(--qy-accent);
+    color: var(--qy-accent);
+}
+
+.qy-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.qy-btn-primary {
+    border-color: var(--qy-accent);
+    background: var(--qy-accent);
+    color: #fff;
+}
+
+.qy-btn-primary:hover {
+    background: var(--qy-accent);
+    color: #fff;
+    opacity: .88;
+}
+
+.qy-btn-sm {
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+/* 文字型小按钮（删除等低危操作） */
+.qy-mini {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--qy-faint);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .15s, color .15s;
+}
+
+.qy-item:hover .qy-mini,
+.qy-comment:hover .qy-mini {
+    opacity: 1;
+}
+
+.qy-mini:hover {
+    color: var(--qy-danger);
+}
+
+/* 删除这类破坏性操作：hover 直接变红，别和普通小按钮一个样 */
+.qy-mini-danger {
+    color: var(--qy-faint);
+}
+
+.qy-mini-danger:hover {
+    color: var(--qy-danger);
+    text-decoration: underline;
+}
+
+/* 移动端没有 hover，常显 */
+@media (hover: none) {
+    .qy-mini {
+        opacity: 1;
+    }
+}
+
+/* ================================================================== */
+/* 时间线                                                              */
+/* ================================================================== */
+
+.qy-timeline {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--qy-gap);
+}
+
+.qy-item {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--qy-line);
+    border-radius: var(--qy-radius);
+    background: var(--qy-card);
+    transition: border-color .15s;
+}
+
+.qy-item:hover {
+    border-color: var(--qy-line-strong);
+}
+
+/* 新插入的条目（ajax 发布后）高亮一下 */
+.qy-item.is-new {
+    animation: qy-fade-in .4s ease;
+}
+
+@keyframes qy-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.qy-avatar {
+    flex: 0 0 auto;
+}
+
+/* 卡片左侧的图：头像或预置心情图，两条路都按 40px 圆形裁切。
+   心情 SVG 自身带 width="200px" 属性，只靠属性会被撑成原始大小，
+   所以这里必须显式给尺寸；.qy-mood img 一并写上，改类名也不会失控。 */
+.qy-avatar img,
+.qy-mood img {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.qy-main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.qy-item-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.qy-author {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.qy-time {
+    color: var(--qy-faint);
+    font-size: 12px;
+}
+
+.qy-item-head .qy-mini {
+    margin-left: auto;
+}
+
+/* ---------- 正文 ---------- */
+
+.qy-content {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.qy-content p,
+.qy-comment-text p {
+    margin: 0 0 .6em;
+}
+
+.qy-content p:last-child,
+.qy-comment-text p:last-child {
+    margin-bottom: 0;
+}
+
+.qy-content a,
+.qy-comment-text a {
+    color: var(--qy-accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    word-break: break-all;
+}
+
+.qy-content a:hover,
+.qy-comment-text a:hover {
+    border-bottom-color: currentColor;
+}
+
+.qy-content code,
+.qy-comment-text code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--qy-input-bg);
+    font-size: .9em;
+}
+
+.qy-content strong,
+.qy-comment-text strong {
+    font-weight: 600;
+}
+
+.qy-content del,
+.qy-comment-text del {
+    color: var(--qy-muted);
+}
+
+.qy-content sup,
+.qy-content sub,
+.qy-comment-text sup,
+.qy-comment-text sub {
+    font-size: .75em;
+}
+
+/*
+ * 话题 #标签# —— 现在是一个指向站内搜索的链接（`/?s=标签`，见 Model::topicUrl()）。
+ *
+ * 放在 `.qy-content a` / `.qy-comment-text a` 规则**之后**：两边特异性相同，
+ * 靠源码顺序取胜，所以这里的 border-bottom 覆盖得掉链接那条悬停下划线 ——
+ * 话题用背景色表示悬停，更像个「标签」而不是普通链接。
+ */
+.qy-topic {
+    color: var(--qy-accent);
+    padding: 0 2px;
+    margin: 0 -2px;
+    border-radius: 3px;
+    border-bottom: none;
+}
+
+.qy-topic:hover {
+    color: var(--qy-accent);
+    background: var(--qy-accent-soft);
+    border-bottom: none;
+}
+
+/* ---------- Markdown 块级元素（列表 / 表格 / 代码块 / 标题 / 水平线） ---------- */
+
+/*
+ * 结构由 Model::format() 交给 Typecho 的 HyperDown 生成（与文章同一套解析），
+ * 所以这里要照顾的标签比旧版多：ul/ol/li、table 系列、pre、h1-h6、hr。
+ * 评论区（.qy-comment-text）与正文（.qy-content）共用同一套。
+ */
+
+.qy-content ul,
+.qy-content ol,
+.qy-comment-text ul,
+.qy-comment-text ol {
+    margin: .5em 0;
+    padding-left: 1.35em;
+}
+
+.qy-content li,
+.qy-comment-text li {
+    margin: .15em 0;
+}
+
+/* 列表里再套列表：不要上下撑开 */
+.qy-content li ul,
+.qy-content li ol,
+.qy-comment-text li ul,
+.qy-comment-text li ol {
+    margin: .15em 0;
+}
+
+/*
+ * HyperDown 对「松散列表」（项里有多段）会把内容包进 <p>，
+ * 紧贴的 <p> 会把行距撑成两倍，这里收掉。
+ */
+.qy-content li > p,
+.qy-comment-text li > p {
+    margin: 0 0 .35em;
+}
+
+.qy-content li > p:last-child,
+.qy-comment-text li > p:last-child {
+    margin-bottom: 0;
+}
+
+.qy-content li::marker,
+.qy-comment-text li::marker {
+    color: var(--qy-muted);
+}
+
+/*
+ * 表格：手机上一定放不下，所以让表格自己横向滚动
+ * （display:block + overflow 是常用做法，行/列仍按表格排版）。
+ */
+.qy-content table,
+.qy-comment-text table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    margin: .6em 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-collapse: collapse;
+    font-size: .95em;
+}
+
+.qy-content th,
+.qy-content td,
+.qy-comment-text th,
+.qy-comment-text td {
+    padding: 5px 10px;
+    border: 1px solid var(--qy-line);
+    text-align: left;
+    vertical-align: top;
+}
+
+.qy-content th,
+.qy-comment-text th {
+    background: var(--qy-input-bg);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Markdown 的 `---:` 对齐会输出 align 属性，这里保证它生效 */
+.qy-content th[align="center"],
+.qy-content td[align="center"],
+.qy-comment-text th[align="center"],
+.qy-comment-text td[align="center"] {
+    text-align: center;
+}
+
+.qy-content th[align="right"],
+.qy-content td[align="right"],
+.qy-comment-text th[align="right"],
+.qy-comment-text td[align="right"] {
+    text-align: right;
+}
+
+/* 代码块 */
+.qy-content pre,
+.qy-comment-text pre {
+    margin: .6em 0;
+    padding: 10px 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--qy-line);
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-input-bg);
+    font-size: .88em;
+    line-height: 1.6;
+}
+
+.qy-content pre code,
+.qy-comment-text pre code {
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    font-size: inherit;
+}
+
+/* 标题：时间线里不需要文章级的大标题，整体收小一档 */
+.qy-content h1,
+.qy-content h2,
+.qy-content h3,
+.qy-content h4,
+.qy-content h5,
+.qy-content h6,
+.qy-comment-text h1,
+.qy-comment-text h2,
+.qy-comment-text h3,
+.qy-comment-text h4,
+.qy-comment-text h5,
+.qy-comment-text h6 {
+    margin: .9em 0 .45em;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.qy-content h1,
+.qy-comment-text h1 {
+    font-size: 1.25em;
+}
+
+.qy-content h2,
+.qy-comment-text h2 {
+    font-size: 1.15em;
+}
+
+.qy-content h3,
+.qy-comment-text h3 {
+    font-size: 1.08em;
+}
+
+.qy-content h4,
+.qy-content h5,
+.qy-content h6,
+.qy-comment-text h4,
+.qy-comment-text h5,
+.qy-comment-text h6 {
+    font-size: 1em;
+}
+
+.qy-content > :first-child,
+.qy-comment-text > :first-child {
+    margin-top: 0;
+}
+
+.qy-content > :last-child,
+.qy-comment-text > :last-child {
+    margin-bottom: 0;
+}
+
+.qy-content hr,
+.qy-comment-text hr {
+    margin: .9em 0;
+    border: 0;
+    border-top: 1px solid var(--qy-line);
+}
+
+/* 引用块内部的段落不要上下撑开 */
+.qy-quote p:last-child {
+    margin-bottom: 0;
+}
+
+/* ---------- 搜索结果（轻言自己的搜索：/qingyan?q=） ---------- */
+
+/*
+ * 站内搜索页里那段「轻言里也有 N 条」已移交「搜索增强」插件
+ * （SearchPlus，自带 assets/search.css），这里的对应样式随之移除。
+ */
+
+/* 轻言自己搜索时，列表顶部那条说明 */
+.qy-search-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 12px;
+    padding: 8px 12px;
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-input-bg);
+    font-size: 13px;
+    color: var(--qy-muted);
+}
+
+.qy-search-head b {
+    color: var(--qy-fg);
+}
+
+.qy-search-head-count {
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--qy-card);
+    color: var(--qy-accent);
+}
+
+.qy-search-head-clear {
+    margin-left: auto;
+}
+
+.qy-empty-hint {
+    margin: .5em 0 0;
+    font-size: 13px;
+}
+
+/* ---------- 引用块（> 开头） ---------- */
+
+/*
+ * 结构：<blockquote class="qy-quote">…</blockquote>
+ * 内容由 Model::format() 生成，块内仍会解析行内语法（加粗/链接/话题…）。
+ */
+.qy-content .qy-quote,
+.qy-comment-text .qy-quote {
+    margin: .55em 0;
+    padding: 6px 12px;
+    border-left: 3px solid var(--qy-line-strong);
+    border-radius: 0 var(--qy-radius-sm) var(--qy-radius-sm) 0;
+    background: var(--qy-input-bg);
+    color: var(--qy-muted);
+}
+
+/* 第一行不留上边距、最后一行不留左边距感，紧凑一点 */
+.qy-content .qy-quote:first-child,
+.qy-comment-text .qy-quote:first-child {
+    margin-top: 0;
+}
+
+.qy-content .qy-quote:last-child,
+.qy-comment-text .qy-quote:last-child {
+    margin-bottom: 0;
+}
+
+/* 引用里的引用：再收一点，并且用更实的左边线区分层级 */
+.qy-quote .qy-quote {
+    margin: .4em 0;
+    border-left-color: var(--qy-accent);
+    background: transparent;
+    color: var(--qy-fg);
+}
+
+/* 引用块里文字稍微小一档，和正文区分开 */
+.qy-quote {
+    font-size: .95em;
+    line-height: 1.65;
+}
+
+/* ---------- 操作栏 ---------- */
+
+.qy-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.qy-act {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border: 1px solid var(--qy-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--qy-muted);
+    font: inherit;
+    font-size: 12px;
+    line-height: 1.8;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+}
+
+.qy-act:hover {
+    border-color: var(--qy-accent);
+    color: var(--qy-accent);
+}
+
+.qy-act .qy-icon {
+    font-size: 13px;
+    line-height: 1;
+}
+
+.qy-like.is-liked {
+    border-color: var(--qy-like);
+    color: var(--qy-like);
+    background: rgba(233, 84, 107, .08);
+}
+
+/* ================================================================== */
+/* 评论区                                                              */
+/* ================================================================== */
+
+.qy-comments {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--qy-line);
+}
+
+.qy-comments[hidden] {
+    display: none;
+}
+
+.qy-comment-list {
+    margin: 0 0 12px;
+    padding: 0;
+    list-style: none;
+}
+
+.qy-comment {
+    display: flex;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.qy-comment + .qy-comment {
+    border-top: 1px solid var(--qy-line);
+}
+
+.qy-comment-avatar {
+    flex: 0 0 auto;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.qy-comment-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.qy-comment-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 12px;
+}
+
+.qy-comment-author {
+    font-weight: 600;
+    color: var(--qy-fg);
+}
+
+.qy-comment-time {
+    color: var(--qy-faint);
+}
+
+.qy-comment-meta .qy-mini {
+    margin-left: auto;
+}
+
+.qy-comment-text {
+    font-size: 14px;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.qy-comment-empty {
+    padding: 6px 0;
+    color: var(--qy-faint);
+    font-size: 13px;
+    list-style: none;
+}
+
+.qy-comment-form {
+    margin-top: 4px;
+}
+
+/* ================================================================== */
+/* 表情面板                                                            */
+/* ================================================================== */
+
+.qy-emoji-toggle {
+    padding: 3px 10px;
+    border: 1px solid var(--qy-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--qy-muted);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.qy-emoji-toggle:hover {
+    border-color: var(--qy-accent);
+    color: var(--qy-accent);
+}
+
+.qy-emoji {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    max-height: 168px;
+    overflow-y: auto;
+    margin-top: 8px;
+    padding: 8px;
+    border: 1px solid var(--qy-line);
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-input-bg);
+}
+
+.qy-emoji[hidden] {
+    display: none;
+}
+
+.qy-emoji-item {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background .12s;
+}
+
+.qy-emoji-item:hover {
+    background: var(--qy-accent-soft);
+}
+
+/* ================================================================== */
+/* 分页                                                                */
+/* ================================================================== */
+
+.qy-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 22px;
+    flex-wrap: wrap;
+}
+
+.qy-page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--qy-line);
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-card);
+    color: var(--qy-muted);
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+}
+
+.qy-page:hover {
+    border-color: var(--qy-accent);
+    color: var(--qy-accent);
+}
+
+.qy-page.is-current {
+    border-color: var(--qy-accent);
+    background: var(--qy-accent);
+    color: #fff;
+    cursor: default;
+}
+
+.qy-page.is-disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+.qy-page.is-disabled:hover {
+    border-color: var(--qy-line);
+    color: var(--qy-muted);
+}
+
+.qy-page.is-loading {
+    opacity: .6;
+    pointer-events: none;
+}
+
+.qy-gap {
+    padding: 0 2px;
+    color: var(--qy-faint);
+}
+
+/* ================================================================== */
+/* 空状态 / 提示                                                       */
+/* ================================================================== */
+
+.qy-empty {
+    padding: 48px 20px;
+    border: 1px dashed var(--qy-line-strong);
+    border-radius: var(--qy-radius);
+    text-align: center;
+    color: var(--qy-faint);
+}
+
+.qy-empty p {
+    margin: 0;
+}
+
+.qy-msg {
+    font-size: 12px;
+    color: var(--qy-muted);
+}
+
+.qy-msg.is-ok {
+    color: var(--qy-ok);
+}
+
+.qy-msg.is-error {
+    color: var(--qy-danger);
+}
+
+/* 加载遮罩（ajax 翻页时） */
+.qy-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: .45;
+    transition: opacity .15s;
+}
+
+/* ================================================================== */
+/* 移动端                                                              */
+/* ================================================================== */
+
+@media (max-width: 560px) {
+    .qy-embed {
+        font-size: 14px;
+    }
+
+    .qy-item {
+        padding: 13px;
+        gap: 10px;
+    }
+
+    .qy-avatar img {
+        width: 34px;
+        height: 34px;
+    }
+
+    .qy-editor {
+        padding: 13px;
+    }
+
+    .qy-pager {
+        gap: 4px;
+    }
+
+    .qy-page {
+        min-width: 30px;
+        height: 30px;
+        padding: 0 8px;
+        font-size: 12px;
+    }
+}
+
+/* ================================================================== */
+/* 深色模式                                                            */
+/* ================================================================== */
+
+@media (prefers-color-scheme: dark) {
+    .qy-embed {
+        --qy-card: #1a1d22;
+        --qy-fg: #d8dde3;
+        --qy-muted: #8b939d;
+        --qy-faint: #6e767f;
+        --qy-accent: #5aa1c4;
+        --qy-accent-soft: rgba(90, 161, 196, .14);
+        --qy-like: #f0708a;
+        --qy-line: rgba(255, 255, 255, .1);
+        --qy-line-strong: rgba(255, 255, 255, .18);
+        --qy-input-bg: rgba(255, 255, 255, .05);
+    }
+}
+
+/* ============================================================
+   心情徽章（替代头像）
+   ============================================================ */
+
+/* 卡片左侧：沿用 .qy-avatar 的 40px 圆位。
+   里面无论是头像还是预置心情图，都走上面 .qy-avatar img 的尺寸与圆形裁切，
+   所以这里不再设背景色 —— 心情图多半是透明底的，加底色反而脏。 */
+.qy-mood {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 40px;
+}
+
+/* 发布框里那个档位的缩略图 */
+.qy-mood-ico {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* 发布框里的心情选择 */
+.qy-moods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0 0;
+}
+
+.qy-mood-pick {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border: 1px solid var(--qy-line-strong);
+    border-radius: 999px;
+    font-size: 13px;
+    line-height: 1.7;
+    cursor: pointer;
+    user-select: none;
+    transition: border-color .15s, color .15s;
+}
+
+/* radio 藏起来但保留键盘可聚焦 */
+.qy-mood-pick input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.qy-mood-pick:hover {
+    border-color: var(--qy-accent);
+}
+
+.qy-mood-pick:has(input:checked) {
+    border-color: var(--qy-accent);
+    color: var(--qy-accent);
+    font-weight: 600;
+}
