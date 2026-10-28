@@ -5,7 +5,7 @@
  *
  * @package Qingyan
  * @author  zizdog
- * @version 2.8.7
+ * @version 2.8.8
  * @link    https://zizdog.com
  */
 
@@ -30,7 +30,7 @@ namespace {
     class Qingyan_Plugin_Base implements Typecho_Plugin_Interface
     {
         /** 插件版本 */
-        const VERSION = '2.8.7';
+        const VERSION = '2.8.8';
 
         /** 路由名：API 接口 */
         const ROUTE_API = 'qingyan_api';

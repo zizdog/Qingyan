@@ -559,7 +559,8 @@ class Updater
                 . '<strong>✓ ' . htmlspecialchars($this->cfg['title']) . ' 已是最新版本</strong>：v'
                 . htmlspecialchars((string) $st['current'])
                 . ('' !== (string) $st['checked'] ? '<span style="color:#666;margin-left:10px;font-size:13px;">检查于 ' . htmlspecialchars($st['checked']) . '</span>' : '')
-                . '<span style="margin-left:10px;">' . $check . '</span>';
+                . '<span style="margin-left:10px;">' . $check . '</span>'
+                . '</div>';
         }
 
         $ver      = htmlspecialchars((string) $st['latest']);

@@ -20,7 +20,7 @@ require_once dirname(__FILE__) . '/Renderer.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.7
+ * @version 2.8.8
  */
 class Qingyan_Front extends Typecho_Widget
 {

@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.7
+ * @version 2.8.8
  */
 class Qingyan_Renderer
 {
