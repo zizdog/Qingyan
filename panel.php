@@ -10,7 +10,7 @@
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.5
+ * @version 2.8.6
  */
 
 if (!defined('__TYPECHO_ADMIN__')) {
@@ -492,7 +492,7 @@ if ('doctor' === $panelAction) {
         <div class="qya-head">
             <span class="qya-head-item">
                 <?php _e('前台地址：'); ?>
-                <a href="<?php echo qy_admin_esc(Qingyan_Plugin::homeUrl()); ?>" target="_blank"><?php echo qy_admin_esc(Qingyan_Plugin::homeUrl()); ?></a>
+                <a href="<?php echo qy_admin_esc(Qingyan_Plugin::frontUrl()); ?>" target="_blank"><?php echo qy_admin_esc(Qingyan_Plugin::frontUrl()); ?></a>
             </span>
             <a class="qya-head-btn" href="<?php echo qy_admin_esc($options->adminUrl . 'plugins.php?config=Qingyan'); ?>"><?php _e('插件设置'); ?></a>
             <a class="qya-head-btn" href="<?php echo qy_admin_esc($options->adminUrl . 'extending.php?panel=Qingyan/panel.php&action=doctor'); ?>"><?php _e('运行环境自检'); ?></a>
@@ -789,7 +789,7 @@ if ('doctor' === $panelAction) {
                             </td>
                             <td class="qya-comment-text"><?php echo Qingyan_Model::format($comment['text']); ?></td>
                             <td>
-                                <a href="<?php echo qy_admin_esc(Qingyan_Plugin::homeUrl(1) . '#qy-' . intval($comment['qid'])); ?>" target="_blank">#<?php echo intval($comment['qid']); ?></a>
+                                <a href="<?php echo qy_admin_esc(Qingyan_Plugin::frontUrl(1) . '#qy-' . intval($comment['qid'])); ?>" target="_blank">#<?php echo intval($comment['qid']); ?></a>
                             </td>
                             <td>
                                 <?php echo qy_admin_esc(date('Y-m-d H:i', intval($comment['created']))); ?>

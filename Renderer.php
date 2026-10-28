@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 1.2.0
+ * @version 2.8.6
  */
 class Qingyan_Renderer
 {
@@ -726,7 +726,7 @@ class Qingyan_Renderer
         // 注意：css / js 各只捕获一次，assets 由两者拼接而成。
         // 因为 outputCss / outputJs 内部有 static 去重标记，
         // 重复调用会拿到空串——对本插件是好事（避免脚本重复绑定事件），
-        // 但这里必须靠拼接，不能再调一次 outputAssets()。
+        // 所以这里必须分别捕获再拼接，不能合并成一次调用。
         $cssHtml = self::capture(function () use ($css) { self::outputCss($css); });
         $jsHtml  = self::capture(function () use ($ctx) { self::outputJs($ctx); });
 
@@ -838,19 +838,6 @@ class Qingyan_Renderer
             'next'  => $page < $pages ? $url($page + 1) : '',
             'items' => self::pagerItems($page, $pages, $url),
         );
-    }
-
-    /**
-     * 输出 CSS 与 JS（供 snapshot 捕获）
-     *
-     * @param array $ctx
-     * @param bool  $css 是否输出自带样式
-     * @return void
-     */
-    public static function outputAssets($ctx, $css = true)
-    {
-        self::outputCss($css);
-        self::outputJs($ctx);
     }
 
     /**
@@ -1082,7 +1069,7 @@ class Qingyan_Renderer
         $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
 
         if ('' === $uri) {
-            return Qingyan_Plugin::homeUrl(1);
+            return Qingyan_Plugin::frontUrl(1);
         }
 
         // 去掉已有的 page 参数，交给分页逻辑重新拼

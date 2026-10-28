@@ -13,7 +13,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.5
+ * @version 2.8.6
  */
 class Qingyan_Model
 {

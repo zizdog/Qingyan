@@ -21,7 +21,7 @@ require_once dirname(__FILE__) . '/Plugin.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 1.0.0
+ * @version 2.8.6
  */
 class Qingyan_Doctor
 {

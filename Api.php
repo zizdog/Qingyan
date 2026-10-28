@@ -12,7 +12,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 1.0.0
+ * @version 2.8.6
  */
 class Qingyan_Api extends Typecho_Widget
 {
@@ -121,7 +121,7 @@ class Qingyan_Api extends Typecho_Widget
                 'comments' => intval($row['commentsNum']),
                 'created'  => intval($row['created']),
                 'ago'      => Qingyan_Model::timeAgo($row['created']),
-                'url'      => Qingyan_Plugin::homeUrl(1) . '#qy-' . intval($row['id']),
+                'url'      => Qingyan_Plugin::frontUrl(1) . '#qy-' . intval($row['id']),
             );
         }
 

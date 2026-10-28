@@ -5,7 +5,7 @@
  *
  * @package Qingyan
  * @author  zizdog
- * @version 2.8.5
+ * @version 2.8.6
  * @link    https://zizdog.com
  */
 
@@ -29,7 +29,7 @@ namespace {
     class Qingyan_Plugin_Base implements Typecho_Plugin_Interface
     {
         /** 插件版本 */
-        const VERSION = '2.8.5';
+        const VERSION = '2.8.6';
 
         /** 路由名：API 接口 */
         const ROUTE_API = 'qingyan_api';
@@ -1191,70 +1191,6 @@ namespace {
         }
 
         /**
-         * 清理所有「轻言」面板，只保留一个
-         *
-         * 直接改 panelTable 写回 options 表，不走 Helper，
-         * 这样能跨索引清理（历史版本可能建在别的一级菜单下）。
-         *
-         * @return int 清理掉的条数
-         */
-        public static function dedupePanels()
-        {
-            $removed = 0;
-
-            try {
-                $table = self::panelTable();
-
-                if (empty($table) || !isset($table['child']) || !is_array($table['child'])) {
-                    return 0;
-                }
-
-                $target = array(
-                    'extending.php?panel=' . urlencode(trim(self::PANEL_FILE, '/')),
-                    'extending.php?panel=' . trim(self::PANEL_FILE, '/'),
-                );
-
-                $kept = false;
-
-                foreach ($table['child'] as $index => $panels) {
-                    if (!is_array($panels)) {
-                        continue;
-                    }
-
-                    foreach ($panels as $key => $panel) {
-                        if (!is_array($panel) || !isset($panel[2]) || !in_array((string) $panel[2], $target, true)) {
-                            continue;
-                        }
-
-                        // 保留第一个，且挪到「管理」下
-                        if (!$kept) {
-                            $kept = true;
-
-                            if ((int) $index !== self::MENU_INDEX) {
-                                $table['child'][self::MENU_INDEX][] = $panel;
-                                unset($table['child'][$index][$key]);
-                                $removed++;
-                            }
-
-                            continue;
-                        }
-
-                        unset($table['child'][$index][$key]);
-                        $removed++;
-                    }
-                }
-
-                if ($removed > 0) {
-                    self::writePanelTable($table);
-                }
-            } catch (Throwable $e) {
-                return 0;
-            }
-
-            return $removed;
-        }
-
-        /**
          * 读取 panelTable（自动反序列化）
          *
          * @return array
@@ -1383,17 +1319,6 @@ namespace {
             }
 
             return $removed;
-        }
-
-        /**
-         * 写回 panelTable
-         *
-         * @param array $table
-         * @return bool
-         */
-        public static function writePanelTablePublic($table)
-        {
-            return self::writePanelTable($table);
         }
 
         /**

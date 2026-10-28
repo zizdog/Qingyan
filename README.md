@@ -104,7 +104,7 @@
 <ul class="my-qingyan">
     <?php foreach ($list as $item): ?>
     <li>
-        <a href="<?php echo Qingyan_Plugin::homeUrl(1) . '#qy-' . $item['id']; ?>">
+        <a href="<?php echo Qingyan_Plugin::frontUrl(1) . '#qy-' . $item['id']; ?>">
             <?php echo Qingyan_Model::format($item['content']); ?>
         </a>
         <time><?php echo Qingyan_Model::timeAgo($item['created']); ?></time>
@@ -114,7 +114,7 @@
 <?php endif; ?>
 
 <!-- 入口链接 -->
-<a href="<?php Qingyan_Plugin::homeUrl(); ?>">轻言</a>
+<a href="<?php echo Qingyan_Plugin::frontUrl(); ?>">轻言</a>
 ```
 
 ### render() 参数
