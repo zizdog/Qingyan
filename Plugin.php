@@ -5,7 +5,7 @@
  *
  * @package Qingyan
  * @author  zizdog
- * @version 2.8.6
+ * @version 2.8.7
  * @link    https://zizdog.com
  */
 
@@ -16,6 +16,7 @@ namespace {
     }
 
     require_once __DIR__ . '/compat.php';
+    require_once __DIR__ . '/updater.php';
     require_once __DIR__ . '/Model.php';
     require_once __DIR__ . '/Renderer.php';
     require_once __DIR__ . '/Api.php';
@@ -29,7 +30,7 @@ namespace {
     class Qingyan_Plugin_Base implements Typecho_Plugin_Interface
     {
         /** 插件版本 */
-        const VERSION = '2.8.6';
+        const VERSION = '2.8.7';
 
         /** 路由名：API 接口 */
         const ROUTE_API = 'qingyan_api';
@@ -405,6 +406,71 @@ namespace {
                 _t('选择「删除数据」会在禁用插件时一并 DROP 三张数据表，请谨慎。')
             );
             $form->addInput($keepData);
+
+            // 在线更新提示（Typecho 1.3；拿不到 Updater 时静默跳过）
+            echo self::updateNotice();
+        }
+
+        /**
+         * 在线更新器（plugin 模式）
+         *
+         * 依赖 `updater.php`（UPDATE-STANDARD 的参考实现）与 Typecho 1.3。
+         * 1.2 没有命名空间 Widget，直接返回 false，功能整体降级为「无更新入口」。
+         *
+         * @return \Typecho\Updater|false
+         */
+        public static function updater()
+        {
+            static $updater = NULL;
+
+            if (NULL !== $updater) {
+                return $updater;
+            }
+
+            $updater = false;
+
+            if (!class_exists('\Typecho\Updater')
+                || !qy_is_modern()
+                || !class_exists('\Typecho\Widget')
+                || !defined('__TYPECHO_ROOT_DIR__')) {
+                return $updater;
+            }
+
+            try {
+                $updater = new \Typecho\Updater(array(
+                    'kind'          => 'plugin',
+                    'slug'          => 'qingyan',
+                    'version'       => self::VERSION,
+                    'root'          => __DIR__,
+                    'title'         => '轻言 Qingyan',
+                    'action_prefix' => 'qingyan',
+                    'cache_dir'     => rtrim((string) __TYPECHO_ROOT_DIR__, '/') . '/usr/cache/updater',
+                ));
+            } catch (Throwable $e) {
+                $updater = false;
+            }
+
+            return $updater;
+        }
+
+        /**
+         * 设置页顶部的更新提示条
+         *
+         * @return string
+         */
+        public static function updateNotice()
+        {
+            $updater = self::updater();
+
+            if (!$updater) {
+                return '';
+            }
+
+            try {
+                return (string) $updater->notice();
+            } catch (Throwable $e) {
+                return '';
+            }
         }
 
         /**
@@ -726,6 +792,8 @@ namespace {
                             ->where('name = ?', $name)
                     );
 
+                    self::patchLiveConfig($default);
+
                     return true;
                 }
 
@@ -733,6 +801,10 @@ namespace {
                     $db->insert('table.options')
                         ->rows(array('name' => $name, 'user' => 0, 'value' => $default))
                 );
+
+                // 同一请求里 Options 单例已经读过 options 表，不刷新的话
+                // core 随后 config() 仍会报「配置信息没有找到」。
+                self::patchLiveConfig($default);
 
                 return true;
             } catch (Throwable $e) {
@@ -773,16 +845,30 @@ namespace {
                     ->where('name = ?', 'plugin:Qingyan')
             );
 
+            self::patchLiveConfig($value);
+
+            return true;
+        }
+
+        /**
+         * 把配置值写回当前请求的 Options 单例
+         *
+         * Widget_Options 是请求级单例：写库不会自动刷新它。
+         * 自愈补行 / 裁剪键之后必须同步内存里那份，否则同一请求里
+         * core 的 config() 仍读旧值（缺行时直接抛异常）。
+         *
+         * @param string $value serialize 后的配置值
+         * @return void
+         */
+        protected static function patchLiveConfig($value)
+        {
             self::$optCache = array();
 
-            // 让同一请求内 Helper::options()->plugin('Qingyan') 立即读到新值
             try {
                 Helper::options()->{'plugin:Qingyan'} = $value;
             } catch (Throwable $e) {
                 // 刷新不了也不影响下次请求
             }
-
-            return true;
         }
 
         /**
@@ -809,6 +895,8 @@ namespace {
                 if (is_array($row) && !empty($row)) {
                     $db->query("UPDATE `{$table}` SET `value` = {$safeValue} WHERE `name` = {$safeName}", QY_DB_WRITE);
 
+                    self::patchLiveConfig($default);
+
                     return true;
                 }
 
@@ -816,6 +904,8 @@ namespace {
                     "INSERT INTO `{$table}` (`name`, `user`, `value`) VALUES ({$safeName}, 0, {$safeValue})",
                     QY_DB_WRITE
                 );
+
+                self::patchLiveConfig($default);
 
                 return true;
             } catch (Throwable $e) {
@@ -1575,7 +1665,25 @@ namespace {
      */
     try {
         Qingyan_Plugin_Base::writeDefaultConfig();
+        // 覆盖文件升级（不重新激活）时，老表也要补上新列
+        Qingyan_Model::ensureSchema();
     } catch (Throwable $e) {
         // 静默失败，不能因为自愈逻辑影响页面
+    }
+
+    /*
+     * 在线更新动作：?qingyan-check=1 / ?qingyan-update=1
+     * 必须在任何输出之前处理（成功/失败都会 302 回设置页）。
+     */
+    if (defined('__TYPECHO_ADMIN__') && __TYPECHO_ADMIN__) {
+        try {
+            $qyUpdater = Qingyan_Plugin_Base::updater();
+
+            if ($qyUpdater) {
+                $qyUpdater->handleAction();
+            }
+        } catch (Throwable $e) {
+            // 更新动作异常不能影响后台其它页面
+        }
     }
 }

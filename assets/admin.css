@@ -582,3 +582,63 @@
     object-fit: cover;
     vertical-align: -3px;
 }
+
+/* ---------- 配图 ---------- */
+.qya-images {
+    margin: 4px 0 14px;
+}
+
+.qya-images input[type="file"] {
+    display: block;
+    margin-top: 8px;
+    max-width: 100%;
+}
+
+.qya-image-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.qya-image-item {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--qya-line);
+    border-radius: var(--qya-radius);
+    background: rgba(128, 128, 128, .04);
+}
+
+.qya-image-item img {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: calc(var(--qya-radius) - 1px);
+    display: block;
+}
+
+.qya-image-del {
+    font-size: 12px;
+    color: var(--qya-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+}
+
+.qya-thumbs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.qya-thumbs img {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: var(--qya-radius);
+    border: 1px solid var(--qya-line);
+}

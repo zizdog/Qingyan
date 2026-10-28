@@ -21,7 +21,7 @@ require_once dirname(__FILE__) . '/Plugin.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.6
+ * @version 2.8.7
  */
 class Qingyan_Doctor
 {
@@ -42,6 +42,7 @@ class Qingyan_Doctor
         self::checkConfig($rows);
         self::checkMenu($rows);
         self::checkApiUrl($rows);
+        self::checkFrontUrl($rows);
         self::checkRoute($rows);
         self::checkActivated($rows);
         self::checkStats($rows);
@@ -282,6 +283,110 @@ class Qingyan_Doctor
             $url,
             $dup ? '出现两段 index.php —— 运行的是旧版 Plugin.php，请重新覆盖插件文件' : ''
         );
+    }
+
+    /**
+     * 前台地址是否可达
+     *
+     * 站点常见配置错误：frontUrl 指向一个并不存在的页面（例如从别的站点
+     * 抄来的 /says.html），结果每条轻言的「阅读原文」链接都是 404。
+     * 这里只做一个 3 秒内的轻量探测，失败不阻塞自检页。
+     */
+    protected static function checkFrontUrl(&$rows)
+    {
+        $class = self::pluginClass();
+
+        if (!class_exists($class) || !method_exists($class, 'opt')) {
+            self::row($rows, '前台地址', false, '无法检查（类未加载）', '');
+
+            return;
+        }
+
+        $url = trim((string) $class::opt('frontUrl', ''));
+
+        if ('' === $url) {
+            self::row(
+                $rows,
+                '前台地址',
+                true,
+                '未配置，使用插件自带页面 /' . $class::slug(),
+                '如需把时间线嵌进主题页面，请在设置页填写「前台地址」'
+            );
+
+            return;
+        }
+
+        $code = self::httpStatus($url);
+        $ok   = ($code >= 200 && $code < 400);
+
+        self::row(
+            $rows,
+            '前台地址',
+            $ok,
+            $url . ' → ' . ($code > 0 ? 'HTTP ' . $code : '无法连接'),
+            $ok ? '' : '这个地址打不开：确认是完整 URL、页面已发布；'
+                . '独立页面配置错了会改走 /' . $class::slug()
+        );
+    }
+
+    /**
+     * 轻量 HTTP 状态探测（HEAD，失败退回 GET；总预算约 3 秒）
+     *
+     * @param string $url
+     * @return int 0 表示无法连接
+     */
+    protected static function httpStatus($url)
+    {
+        if (!preg_match('#^https?://#i', $url)) {
+            return 0;
+        }
+
+        if (function_exists('curl_init')) {
+            foreach (array(true, false) as $head) {
+                $ch = curl_init($url);
+
+                curl_setopt_array($ch, array(
+                    CURLOPT_NOBODY         => $head,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_MAXREDIRS      => 3,
+                    CURLOPT_CONNECTTIMEOUT => 2,
+                    CURLOPT_TIMEOUT        => 3,
+                    CURLOPT_SSL_VERIFYPEER => true,
+                    CURLOPT_SSL_VERIFYHOST => 2,
+                    CURLOPT_USERAGENT      => 'Typecho-Qingyan-Doctor/1.0',
+                ));
+
+                curl_exec($ch);
+                $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+
+                // HEAD 被拒（405/501）时再用 GET 试一次
+                if ($head && in_array($code, array(0, 403, 405, 501), true)) {
+                    continue;
+                }
+
+                return $code;
+            }
+        }
+
+        $context = stream_context_create(array(
+            'http' => array('method' => 'GET', 'timeout' => 3, 'ignore_errors' => true),
+        ));
+
+        $body = @file_get_contents($url, false, $context);
+
+        if (false === $body || empty($http_response_header)) {
+            return 0;
+        }
+
+        foreach ($http_response_header as $line) {
+            if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) {
+                return (int) $m[1];
+            }
+        }
+
+        return 0;
     }
 
     /**

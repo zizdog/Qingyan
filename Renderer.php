@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.6
+ * @version 2.8.7
  */
 class Qingyan_Renderer
 {
@@ -302,6 +302,28 @@ class Qingyan_Renderer
                 <?php if ('' !== trim($item['content'])) { ?>
                 <div class="qy-content"><?php echo Qingyan_Model::format($item['content']); ?></div>
                 <?php } ?>
+
+                <?php
+                $qyImages = Qingyan_Model::imagesOf($item);
+
+                if (!empty($qyImages)) {
+                    ?>
+                <div class="qy-images qy-images-<?php echo count($qyImages) > 1 ? 'multi' : 'single'; ?>">
+                    <?php foreach ($qyImages as $qyRel) {
+                        $qyImgUrl = Qingyan_Model::imageUrl($qyRel);
+
+                        if ('' === $qyImgUrl) {
+                            continue;
+                        }
+                        ?>
+                    <a class="qy-image" href="<?php echo self::esc($qyImgUrl); ?>" target="_blank" rel="noopener nofollow">
+                        <img src="<?php echo self::esc($qyImgUrl); ?>" alt="" loading="lazy" decoding="async">
+                    </a>
+                    <?php } ?>
+                </div>
+                    <?php
+                }
+                ?>
 
                 <div class="qy-actions">
                     <?php if ($ctx['likeOn']) { ?>
@@ -800,6 +822,7 @@ class Qingyan_Renderer
             'liked'       => $liked,
             'status'      => $row['status'],
             'url'         => Qingyan_Plugin::frontUrl() . '#qy-' . $id,
+            'images'      => self::imageData($row),
             'comments'    => $comments,
             // 现成的评论区 HTML（列表 + 表单，自带交互），
             // 不想自己渲染评论就直接输出它
@@ -810,6 +833,27 @@ class Qingyan_Renderer
             'commentOn'   => $ctx['commentOn'],
             'isAdmin'     => $ctx['isAdmin'],
         );
+    }
+
+    /**
+     * 配图列表（rel + 可直接输出的 url）
+     *
+     * @param array $row
+     * @return array
+     */
+    public static function imageData($row)
+    {
+        $result = array();
+
+        foreach (Qingyan_Model::imagesOf($row) as $rel) {
+            $url = Qingyan_Model::imageUrl($rel);
+
+            if ('' !== $url) {
+                $result[] = array('rel' => $rel, 'url' => $url);
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -951,7 +995,7 @@ class Qingyan_Renderer
             $db   = qy_db();
             $mark = implode(',', $ids);
             $rows = $db->fetchAll(
-                $db->select('id', 'liked')->from('table.qingyan')
+                $db->select('id', 'liked')->from(Qingyan_Model::T_POST)
                     ->where("id IN ({$mark})")
             );
 

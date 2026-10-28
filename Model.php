@@ -13,7 +13,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.6
+ * @version 2.8.7
  */
 class Qingyan_Model
 {
@@ -32,6 +32,20 @@ class Qingyan_Model
 
     /** 单条内容最多保留的评论数，防止 JSON 无限膨胀 */
     const MAX_COMMENTS = 500;
+
+    /** 单条内容最多几张配图 */
+    const MAX_IMAGES = 9;
+
+    /** 单张配图上限（5MB） */
+    const MAX_IMAGE_BYTES = 5242880;
+
+    /** 允许的图片类型 => 扩展名 */
+    private static $imageTypes = array(
+        'image/jpeg' => 'jpg',
+        'image/png'  => 'png',
+        'image/gif'  => 'gif',
+        'image/webp' => 'webp',
+    );
 
     /** @var array 作者缓存，避免同一请求内重复查 users 表 */
     private static $authors = array();
@@ -201,6 +215,9 @@ class Qingyan_Model
             }
         }
 
+        // images：配图（JSON 数组，存 usr/uploads/qingyan/ 下的相对路径）
+        self::addImagesColumn();
+
         // 历史数据：默认档位从 'default' 改名成了 'avatar'，
         // 读的时候 normalizeMood() 也能兜住，但顺手把库里的值也统一掉
         try {
@@ -212,6 +229,60 @@ class Qingyan_Model
             );
         } catch (Throwable $e) {
             // 忽略
+        }
+    }
+
+    /**
+     * 请求级轻量迁移：老库没有 images 列时补上
+     *
+     * install() 只在激活时执行；用户覆盖文件升级插件时不会重新激活，
+     * 所以每次加载插件时补一次（hasColumn 只是一条 SELECT，命中后 static 短路）。
+     *
+     * @return void
+     */
+    public static function ensureSchema()
+    {
+        static $done = false;
+
+        if ($done) {
+            return;
+        }
+
+        $done = true;
+
+        try {
+            self::addImagesColumn();
+        } catch (Throwable $e) {
+            // 表不存在（未激活）等情况直接跳过
+        }
+    }
+
+    /**
+     * 补 images 列（幂等）
+     *
+     * @return void
+     */
+    protected static function addImagesColumn()
+    {
+        $db     = self::db();
+        $prefix = $db->getPrefix();
+        $driver = self::driver();
+        $table  = $prefix . 'qingyan';
+
+        if (self::hasColumn($table, 'images')) {
+            return;
+        }
+
+        if ('mysql' === $driver) {
+            $sql = "ALTER TABLE `{$table}` ADD COLUMN `images` text";
+        } else {
+            $sql = "ALTER TABLE \"{$table}\" ADD COLUMN \"images\" TEXT";
+        }
+
+        try {
+            $db->query($sql, QY_DB_WRITE);
+        } catch (Throwable $e) {
+            // 并发激活等情况下列可能刚被加上，忽略即可
         }
     }
 
@@ -248,6 +319,243 @@ class Qingyan_Model
         $db->query("DROP TABLE IF EXISTS {$prefix}qingyan", QY_DB_WRITE);
 
         return true;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 配图                                                               */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * 上传目录（绝对路径）
+     *
+     * @return string
+     */
+    public static function uploadsDir()
+    {
+        $dir = defined('__TYPECHO_UPLOAD_DIR__')
+            ? (string) __TYPECHO_UPLOAD_DIR__
+            : rtrim((string) __TYPECHO_ROOT_DIR__, '/') . '/usr/uploads';
+
+        return rtrim($dir, '/');
+    }
+
+    /**
+     * 图片对外 URL
+     *
+     * @param string $rel 相对路径（qingyan/2026/10/xxx.jpg）
+     * @return string
+     */
+    public static function imageUrl($rel)
+    {
+        $rel = (string) $rel;
+
+        if (!self::validImagePath($rel)) {
+            return '';
+        }
+
+        $base = defined('__TYPECHO_UPLOAD_URL__')
+            ? (string) __TYPECHO_UPLOAD_URL__
+            : (string) Helper::options()->siteUrl;
+
+        return Typecho_Common::url('/usr/uploads/' . $rel, $base);
+    }
+
+    /**
+     * 是否是我们自己生成的图片路径（防路径穿越 / 防误删）
+     *
+     * @param string $rel
+     * @return bool
+     */
+    public static function validImagePath($rel)
+    {
+        return is_string($rel)
+            && 1 === preg_match('#^qingyan/\d{4}/\d{2}/[a-f0-9]{16,40}\.(?:jpg|png|gif|webp)$#', $rel);
+    }
+
+    /**
+     * 把库里存的 images 值解成数组（过滤非法项）
+     *
+     * @param mixed $raw
+     * @return array
+     */
+    public static function decodeImages($raw)
+    {
+        if (is_array($raw)) {
+            $list = $raw;
+        } else {
+            $list = self::decodeJson($raw);
+        }
+
+        $result = array();
+
+        foreach ((array) $list as $one) {
+            $one = (string) $one;
+
+            if (self::validImagePath($one) && !in_array($one, $result, true)) {
+                $result[] = $one;
+            }
+
+            if (count($result) >= self::MAX_IMAGES) {
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * 数组 → 入库用的 JSON 字符串
+     *
+     * @param mixed $raw
+     * @return string|null
+     */
+    public static function encodeImages($raw)
+    {
+        $list = self::decodeImages($raw);
+
+        return empty($list) ? NULL : json_encode($list, JSON_UNESCAPED_SLASHES);
+    }
+
+    /**
+     * 取某条内容的图片数组（兼容未 normalize 的原始行）
+     *
+     * @param array $row
+     * @return array
+     */
+    public static function imagesOf($row)
+    {
+        if (!is_array($row) || !isset($row['images'])) {
+            return array();
+        }
+
+        return self::decodeImages($row['images']);
+    }
+
+    /**
+     * 保存一个上传的图片
+     *
+     * @param array  $file $_FILES 里的单个元素
+     * @param string $error 失败原因
+     * @return string|null 相对路径
+     */
+    public static function storeImageFile($file, &$error = '')
+    {
+        $error = '';
+
+        if (!is_array($file) || !isset($file['tmp_name'])) {
+            $error = '没有收到文件';
+
+            return NULL;
+        }
+
+        if (!empty($file['error'])) {
+            $error = '上传失败（错误码 ' . intval($file['error']) . '）';
+
+            return NULL;
+        }
+
+        if (!is_uploaded_file($file['tmp_name'])) {
+            $error = '不是合法的上传文件';
+
+            return NULL;
+        }
+
+        return self::importImageFile($file['tmp_name'], isset($file['name']) ? $file['name'] : '');
+    }
+
+    /**
+     * 从本地临时文件导入图片（storeImageFile 与 CLI/测试共用）
+     *
+     * @param string $tmpPath
+     * @param string $origName
+     * @return string|null 相对路径
+     */
+    public static function importImageFile($tmpPath, $origName = '')
+    {
+        if (!is_file($tmpPath) || !is_readable($tmpPath)) {
+            return NULL;
+        }
+
+        $size = @filesize($tmpPath);
+
+        if (false === $size || $size <= 0 || $size > self::MAX_IMAGE_BYTES) {
+            return NULL;
+        }
+
+        $mime = '';
+
+        if (class_exists('finfo')) {
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime  = (string) $finfo->file($tmpPath);
+        }
+
+        if ('' === $mime || !isset(self::$imageTypes[$mime])) {
+            // finfo 不可用或被伪造：再用 getimagesize 兜一次
+            $info = @getimagesize($tmpPath);
+
+            if (!$info || empty($info['mime']) || !isset(self::$imageTypes[$info['mime']])) {
+                return NULL;
+            }
+
+            $mime = (string) $info['mime'];
+        }
+
+        // 尺寸上限：避免解压炸弹式的巨图
+        $info = @getimagesize($tmpPath);
+
+        if (!$info || $info[0] < 1 || $info[1] < 1 || $info[0] > 10000 || $info[1] > 10000) {
+            return NULL;
+        }
+
+        $ext  = self::$imageTypes[$mime];
+        $name = bin2hex(random_bytes(12)) . '.' . $ext;
+        $rel  = 'qingyan/' . date('Y/m') . '/' . $name;
+        $dir  = self::uploadsDir() . '/qingyan/' . date('Y/m');
+
+        if (!is_dir($dir) && !@mkdir($dir, 0755, true)) {
+            return NULL;
+        }
+
+        if (!@move_uploaded_file($tmpPath, $dir . '/' . $name)
+            && !@rename($tmpPath, $dir . '/' . $name)) {
+            return NULL;
+        }
+
+        @chmod($dir . '/' . $name, 0644);
+
+        return $rel;
+    }
+
+    /**
+     * 删除一张配图（只删自己目录内的合法路径）
+     *
+     * @param string $rel
+     * @return void
+     */
+    public static function deleteImageFile($rel)
+    {
+        if (!self::validImagePath($rel)) {
+            return;
+        }
+
+        $path = self::uploadsDir() . '/' . $rel;
+
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    /**
+     * 删除一组配图
+     *
+     * @param array $rels
+     * @return void
+     */
+    public static function deleteImageFiles($rels)
+    {
+        foreach ((array) $rels as $rel) {
+            self::deleteImageFile($rel);
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -293,8 +601,16 @@ class Qingyan_Model
     public static function update($id, $data)
     {
         $db   = self::db();
+        $old  = self::get($id);
         $data = self::filterFields($data);
         $data['modified'] = self::time();
+
+        // 配图被移除时同步删文件（只处理这次请求里明确提交的 images）
+        if (array_key_exists('images', $data) && $old) {
+            $before = self::decodeImages($old['images']);
+            $after  = self::decodeImages($data['images']);
+            self::deleteImageFiles(array_diff($before, $after));
+        }
 
         $db->query($db->update(self::T_POST)->rows($data)->where('id = ?', intval($id)));
 
@@ -311,8 +627,13 @@ class Qingyan_Model
      */
     public static function delete($id)
     {
-        $db = self::db();
-        $id = intval($id);
+        $db  = self::db();
+        $id  = intval($id);
+        $row = self::get($id);
+
+        if ($row) {
+            self::deleteImageFiles(self::decodeImages($row['images']));
+        }
 
         $db->query($db->delete(self::T_POST)->where('id = ?', $id));
 
@@ -1257,7 +1578,7 @@ class Qingyan_Model
     private static function filterFields($data)
     {
         static $allow = array(
-            'authorId', 'author', 'authorMail', 'content',
+            'authorId', 'author', 'authorMail', 'content', 'images',
             'status', 'mood', 'likes', 'commentsNum',
             'source', 'agent', 'created', 'modified',
         );
@@ -1280,6 +1601,10 @@ class Qingyan_Model
 
         if (isset($result['mood'])) {
             $result['mood'] = self::normalizeMood($result['mood']);
+        }
+
+        if (array_key_exists('images', $result)) {
+            $result['images'] = self::encodeImages($result['images']);
         }
 
         return $result;
@@ -1327,6 +1652,7 @@ class Qingyan_Model
         $row['commentsNum'] = intval($row['commentsNum']);
         $row['created']     = intval($row['created']);
         $row['modified']    = intval($row['modified']);
+        $row['images']      = self::decodeImages(isset($row['images']) ? $row['images'] : NULL);
 
         return $row;
     }

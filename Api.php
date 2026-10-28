@@ -12,7 +12,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.6
+ * @version 2.8.7
  */
 class Qingyan_Api extends Typecho_Widget
 {
@@ -53,7 +53,7 @@ class Qingyan_Api extends Typecho_Widget
 
         // 写操作只接受 POST：input() 会回落 $_GET，不限制方法的话
         // 一个 <img src> 或同源 GET 就能触发点赞/评论/删除。
-        $postOnly = array('post', 'like', 'comment', 'delete');
+        $postOnly = array('post', 'like', 'comment', 'delete', 'upload');
 
         if (in_array($do, $postOnly, true) && 'POST' !== $this->method()) {
             if (!headers_sent()) {
@@ -88,6 +88,9 @@ class Qingyan_Api extends Typecho_Widget
             case 'delete':
                 return $this->actionDelete();
 
+            case 'upload':
+                return $this->actionUpload();
+
             default:
                 return $this->json(array(), 404, '接口不存在：' . $do);
         }
@@ -121,6 +124,9 @@ class Qingyan_Api extends Typecho_Widget
                 'comments' => intval($row['commentsNum']),
                 'created'  => intval($row['created']),
                 'ago'      => Qingyan_Model::timeAgo($row['created']),
+                'images'   => array_map(function ($one) {
+                    return $one['url'];
+                }, Qingyan_Renderer::imageData($row)),
                 'url'      => Qingyan_Plugin::frontUrl(1) . '#qy-' . intval($row['id']),
             );
         }
@@ -205,12 +211,22 @@ class Qingyan_Api extends Typecho_Widget
             $content = substr($content, 0, self::MAX_CONTENT);
         }
 
+        // 配图：接受数组，或换行/逗号分隔的相对路径（先调 upload 拿 rel）
+        $rawImages = $this->input('images', array());
+
+        if (is_string($rawImages)) {
+            $rawImages = preg_split('/[\r\n,]+/', $rawImages);
+        }
+
+        $images = Qingyan_Model::decodeImages($rawImages);
+
         $id = Qingyan_Model::add(array(
             'authorId'   => intval($user['uid']),
             'author'     => $user['name'],
             'authorMail' => $user['mail'],
             'content'    => $content,
             'status'     => 'publish',
+            'images'     => $images,
             // 心情徽章：非法值由 normalizeMood 落回 default
             'mood'       => Qingyan_Model::normalizeMood($this->input('mood', 'default')),
             'source'     => 'api',
@@ -467,6 +483,63 @@ class Qingyan_Api extends Typecho_Widget
         Qingyan_Model::delete($id);
 
         return $this->json(array('id' => $id), 0, '已删除');
+    }
+
+    /**
+     * 上传一张配图（仅管理员）
+     *
+     * POST /qingyan/api/upload，表单字段名 image（也兼容 file）。
+     * 返回 {rel, url}；真正的入库由 post / 后台面板完成。
+     *
+     * @return void
+     */
+    protected function actionUpload()
+    {
+        if (!$this->guard()) {
+            return $this->json(array(), 403, '请求校验失败，请刷新页面后重试');
+        }
+
+        $user = $this->identity();
+
+        if (!$user['isAdmin']) {
+            return $this->json(array(), 403, '只有管理员可以上传图片');
+        }
+
+        $file = NULL;
+
+        foreach (array('image', 'file') as $key) {
+            if (isset($_FILES[$key]) && is_array($_FILES[$key])) {
+                $file = $_FILES[$key];
+                break;
+            }
+        }
+
+        if (NULL === $file) {
+            return $this->json(array(), 400, '没有收到图片');
+        }
+
+        // 多图（image[]）时只取第一个，批量请循环调用
+        if (is_array($file['name'])) {
+            $file = array(
+                'name'     => isset($file['name'][0]) ? $file['name'][0] : '',
+                'type'     => isset($file['type'][0]) ? $file['type'][0] : '',
+                'tmp_name' => isset($file['tmp_name'][0]) ? $file['tmp_name'][0] : '',
+                'error'    => isset($file['error'][0]) ? $file['error'][0] : 4,
+                'size'     => isset($file['size'][0]) ? $file['size'][0] : 0,
+            );
+        }
+
+        $error = '';
+        $rel   = Qingyan_Model::storeImageFile($file, $error);
+
+        if (NULL === $rel) {
+            return $this->json(array(), 400, '' !== $error ? $error : '图片不合法（仅支持 jpg/png/gif/webp，单张 ≤ 5MB）');
+        }
+
+        return $this->json(array(
+            'rel' => $rel,
+            'url' => Qingyan_Model::imageUrl($rel),
+        ), 0, '已上传');
     }
 
     /* ------------------------------------------------------------------ */

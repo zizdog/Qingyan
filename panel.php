@@ -10,7 +10,7 @@
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.6
+ * @version 2.8.7
  */
 
 if (!defined('__TYPECHO_ADMIN__')) {
@@ -267,11 +267,64 @@ $qyHandle = function () use ($db, $user) {
             // 心情：非法值一律落回 default
             $mood = Qingyan_Model::normalizeMood(isset($_POST['mood']) ? $_POST['mood'] : '');
 
+            // 配图：保留未被勾除的旧图 + 本次新上传的图（最多 9 张）
+            $removed = array();
+
+            if (isset($_POST['remove_images']) && is_array($_POST['remove_images'])) {
+                $removed = array_values(array_filter(array_map('strval', $_POST['remove_images'])));
+            }
+
+            $images = array();
+
+            if ($id > 0) {
+                $oldRow = Qingyan_Model::get($id);
+                $images = $oldRow ? Qingyan_Model::imagesOf($oldRow) : array();
+                $images = array_values(array_diff($images, $removed));
+            }
+
+            $uploadFailed = 0;
+
+            if (!empty($_FILES['images']) && is_array($_FILES['images'])
+                && isset($_FILES['images']['name']) && is_array($_FILES['images']['name'])) {
+                $total = count($_FILES['images']['name']);
+
+                for ($i = 0; $i < $total; $i++) {
+                    if (Qingyan_Model::MAX_IMAGES <= count($images)) {
+                        break;
+                    }
+
+                    $one = array(
+                        'name'     => isset($_FILES['images']['name'][$i]) ? $_FILES['images']['name'][$i] : '',
+                        'type'     => isset($_FILES['images']['type'][$i]) ? $_FILES['images']['type'][$i] : '',
+                        'tmp_name' => isset($_FILES['images']['tmp_name'][$i]) ? $_FILES['images']['tmp_name'][$i] : '',
+                        'error'    => isset($_FILES['images']['error'][$i]) ? $_FILES['images']['error'][$i] : 4,
+                        'size'     => isset($_FILES['images']['size'][$i]) ? $_FILES['images']['size'][$i] : 0,
+                    );
+
+                    // 没选文件时 error=4（UPLOAD_ERR_NO_FILE），不算失败
+                    if (4 === intval($one['error'])) {
+                        continue;
+                    }
+
+                    $err = '';
+                    $rel = Qingyan_Model::storeImageFile($one, $err);
+
+                    if (NULL === $rel) {
+                        $uploadFailed++;
+                    } else {
+                        $images[] = $rel;
+                    }
+                }
+            }
+
             $data = array(
                 'content' => $content,
                 'status'  => $status,
                 'mood'    => $mood,
+                'images'  => array_slice($images, 0, Qingyan_Model::MAX_IMAGES),
             );
+
+            $suffix = $uploadFailed > 0 ? '（' . $uploadFailed . ' 张图片上传失败：仅支持 jpg/png/gif/webp，单张 ≤ 5MB）' : '';
 
             if ($id > 0) {
                 Qingyan_Model::update($id, $data);
@@ -284,7 +337,7 @@ $qyHandle = function () use ($db, $user) {
                     );
                 }
 
-                return array('type' => 'success', 'text' => '已保存修改');
+                return array('type' => 'success', 'text' => '已保存修改' . $suffix);
             }
 
             $data['authorId']   = intval($user->uid);
@@ -541,7 +594,7 @@ if ('doctor' === $panelAction) {
                 </div>
 
                 <div class="typecho-table-wrap">
-                    <form method="post" action="<?php echo qy_admin_esc($options->adminUrl . $panel); ?>">
+                    <form method="post" enctype="multipart/form-data" action="<?php echo qy_admin_esc($options->adminUrl . $panel); ?>">
                         <input type="hidden" name="_qy_token" value="<?php echo qy_admin_esc($token); ?>">
                         <input type="hidden" name="back" value="<?php echo qy_admin_esc($back); ?>">
                         <input type="hidden" name="action" value="save">
@@ -577,6 +630,27 @@ if ('doctor' === $panelAction) {
                                     </label>
                                     <?php } ?>
                                 </div>
+                            </div>
+
+                            <!-- 配图：勾选移除 / 追加新图 -->
+                            <?php $qyEditImages = $editRow ? Qingyan_Model::imagesOf($editRow) : array(); ?>
+                            <div class="qya-images">
+                                <span class="qya-moods-title"><?php _e('配图'); ?></span>
+                                <?php if (!empty($qyEditImages)) { ?>
+                                <div class="qya-image-list">
+                                    <?php foreach ($qyEditImages as $qyRel) { ?>
+                                    <label class="qya-image-item">
+                                        <img src="<?php echo qy_admin_esc(Qingyan_Model::imageUrl($qyRel)); ?>" alt="">
+                                        <span class="qya-image-del">
+                                            <input type="checkbox" name="remove_images[]" value="<?php echo qy_admin_esc($qyRel); ?>">
+                                            <?php _e('移除'); ?>
+                                        </span>
+                                    </label>
+                                    <?php } ?>
+                                </div>
+                                <?php } ?>
+                                <input type="file" name="images[]" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                                <p class="qya-note"><?php _e('最多 9 张；支持 jpg / png / gif / webp，单张 ≤ 5MB。勾选「移除」后保存即删除文件。'); ?></p>
                             </div>
 
                             <!-- 顺序：状态 → 时间 → 发布按钮 -->
@@ -696,8 +770,22 @@ if ('doctor' === $panelAction) {
                                         src="<?php echo qy_admin_esc($qyMoodSrc); ?>"
                                         alt="<?php echo qy_admin_esc($qyMoodMeta['label']); ?>"
                                         title="<?php echo qy_admin_esc('心情：' . $qyMoodMeta['label']); ?>"><?php echo Qingyan_Model::format($row['content']); ?></div>
+                                <?php $qyRowImages = Qingyan_Model::imagesOf($row); ?>
+                                <?php if (!empty($qyRowImages)) { ?>
+                                <div class="qya-thumbs">
+                                    <?php foreach (array_slice($qyRowImages, 0, 4) as $qyRel) { ?>
+                                    <img src="<?php echo qy_admin_esc(Qingyan_Model::imageUrl($qyRel)); ?>" alt="">
+                                    <?php } ?>
+                                    <?php if (count($qyRowImages) > 4) { ?>
+                                    <span class="qya-note">+<?php echo count($qyRowImages) - 4; ?></span>
+                                    <?php } ?>
+                                </div>
+                                <?php } ?>
                                 <div class="qya-note" style="margin-top:6px">
                                     <span>ID: <?php echo intval($row['id']); ?></span>
+                                    <?php if (!empty($qyRowImages)) { ?>
+                                    <span>· <?php echo count($qyRowImages); ?> 张配图</span>
+                                    <?php } ?>
                                 </div>
                             </td>
                             <td><?php echo empty($row['author']) ? '—' : qy_admin_esc($row['author']); ?></td>
