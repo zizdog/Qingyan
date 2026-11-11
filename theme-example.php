@@ -18,7 +18,8 @@ $this->need('header.php');
 <article class="post qy-archive" itemscope itemtype="http://schema.org/BlogPosting">
     <h1 class="post-title" itemprop="name headline"><?php $this->title(); ?></h1>
     <?php if (class_exists('Qingyan_Plugin')): ?>
-        <?php Qingyan_Plugin::render(array('size' => 10)); ?>
+        <?php /* 不传 size，跟随插件设置「每页条数」；要单页覆盖再写 array('size' => N) */ ?>
+        <?php Qingyan_Plugin::render(); ?>
     <?php endif; ?>
 </article>
 

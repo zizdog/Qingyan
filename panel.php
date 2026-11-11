@@ -10,7 +10,7 @@
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.8
+ * @version 2.8.9
  */
 
 if (!defined('__TYPECHO_ADMIN__')) {

@@ -120,9 +120,12 @@
 
 ### render() 参数
 
+> **不要照抄 `size`**：不传时跟随「插件 → 轻言 → 设置 → 每页条数」；
+> 一旦显式传入，就只覆盖这一次调用（老示例里的 `'size' => 10` 会把设置卡死在 10）。
+
 ```php
 <?php Qingyan_Plugin::render(array(
-    'size'    => 10,     // 每页条数，默认取插件配置的「每页条数」
+    // 'size' => 10,     // 可选：只给这个页面单独指定条数；不写就跟随插件设置
     'page'    => 1,      // 页码，默认取 URL 的 ?page=
     'editor'  => true,   // 是否显示发布框，默认自动（管理员可见）
     'css'     => true,   // 是否引入自带样式，想完全自己写样式传 false
@@ -137,7 +140,7 @@
 （两者共用同一段渲染代码，只是 `render()` 直接 echo）。
 
 ```php
-<?php $qy = Qingyan_Plugin::query(array('size' => 10)); ?>
+<?php $qy = Qingyan_Plugin::query(); // 条数跟随插件设置；需要覆盖再传 array('size' => N) ?>
 
 <?php echo $qy['css']; ?>
 <div class="qy-embed" id="qy-embed">
