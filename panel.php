@@ -10,7 +10,7 @@
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.0
+ * @version 2.9.1
  */
 
 if (!defined('__TYPECHO_ADMIN__')) {
@@ -483,8 +483,16 @@ if (isset($_SESSION['qingyan_notice']) && is_array($_SESSION['qingyan_notice']))
 /* 数据准备                                                            */
 /* ------------------------------------------------------------------ */
 
-$page     = max(1, intval($request->get('p', 1)));
-$size     = 15;
+$page = max(1, intval($request->get('p', 1)));
+
+/*
+ * 后台列表与前台共用设置项「每页条数」：
+ * 以前后台写死 15、前台读设置，改一处数字要改两份代码，还容易出现
+ * 「前台 10 条、后台 15 条」的不一致。这里统一走 pageSize（夹 1..50）。
+ */
+$panelSize = max(1, min(50, Qingyan_Plugin::intOpt('pageSize', 10)));
+
+$size     = $panelSize;
 $total    = Qingyan_Model::count('all');
 $pages    = max(1, intval(ceil($total / $size)));
 $page     = min($page, $pages);
@@ -507,7 +515,7 @@ foreach ($allComments as $qyComment) {
 }
 
 $commentPage  = max(1, intval($request->get('cp', 1)));
-$commentSize  = 15;
+$commentSize  = $panelSize;
 $commentPages = max(1, intval(ceil($statComment / $commentSize)));
 $commentPage  = min($commentPage, $commentPages);
 $comments     = array_slice($allComments, ($commentPage - 1) * $commentSize, $commentSize);

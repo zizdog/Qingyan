@@ -5,7 +5,7 @@
  *
  * @package Qingyan
  * @author  zizdog
- * @version 2.9.0
+ * @version 2.9.1
  * @link    https://zizdog.com
  */
 
@@ -30,7 +30,7 @@ namespace {
     class Qingyan_Plugin_Base implements Typecho_Plugin_Interface
     {
         /** 插件版本 */
-        const VERSION = '2.9.0';
+        const VERSION = '2.9.1';
 
         /** 路由名：API 接口 */
         const ROUTE_API = 'qingyan_api';
@@ -299,7 +299,7 @@ namespace {
                 NULL,
                 '10',
                 _t('每页条数'),
-                _t('前台时间线每页显示的短内容数量，建议 5 - 20。注意：主题模板调用 render() 时若显式传了 size，会覆盖此设置。')
+                _t('前台时间线与后台「管理 → 轻言」列表共用这一条数，建议 5 - 20。注意：主题模板调用 render() 时若显式传了 size，会覆盖前台这一设置。')
             );
             $form->addInput($pageSize->addRule('isInteger', _t('请填写整数')));
 
