@@ -13,7 +13,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.10
+ * @version 2.9.0
  */
 class Qingyan_Model
 {
@@ -1397,9 +1397,9 @@ class Qingyan_Model
     /**
      * 站内搜索：命中的轻言条数
      *
-     * 【为什么需要它】Typecho 的站内搜索（`/?s=关键词`）只查 `table.contents`
-     * —— 文章。轻言内容在自己的表里，所以搜索结果页默认一条轻言也看不到；
-     * 用户点 `#标签#`（会跳到 `/?s=标签`）时会觉得「我明明写过」。
+     * 【为什么需要它】Typecho 的站内搜索只查 `table.contents`（文章）。
+     * SearchPlus 曾调用这里把轻言命中混进站内搜索；2.8.10 起轻言自带搜索，
+     * 话题也直接落在轻言结果页，这里保留给外部调用（如 SearchPlus 仍可用）。
      *
      * 这个方法和 search() 有两个用处：
      *   1. 轻言自己的搜索页 `/qingyan?q=关键词`（Renderer::fetchPage() 在用）；
@@ -2282,8 +2282,9 @@ class Qingyan_Model
     }
 
     /**
-     * 站内搜索地址（`网站/?s=关键词`）
+     * 站内文章搜索地址（`网站/?s=关键词`）
      *
+     * 只搜文章；轻言自己的搜索用 Qingyan_Plugin::searchUrl()。
      * 用 `siteUrl + /?s=关键词` —— 与主题 header.php 里那个搜索表单**完全一致**
      * （`<form method="get" action="{$this->options->siteUrl}"><input name="s">`），
      * 所以行为跟用户在搜索框里手输一模一样，也不挑 Typecho 的固定链接设置

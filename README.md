@@ -75,7 +75,7 @@
 | **嵌入主题** | 主题模板里调 `render()` / `query()` | 想让时间线与博客风格统一 |
 | **只要数据** | `renderList()` 或 `latest()` | 侧边栏挂件等简单场景 |
 
-独立前台与嵌入模式**共用同一份样式和脚本**，发布框、点赞、评论、灯箱功能完全一致。
+独立前台与嵌入模式**共用同一份样式和脚本**，发布框、点赞、评论、配图（点击看原图）行为一致。
 
 ### 方式一：独立前台（零配置）
 
@@ -95,13 +95,17 @@
 ### 方式二：嵌入主题（推荐）
 
 **① 复制模板**：把插件包里的 `theme-example.php` 复制到**当前主题目录**，
-改名 `page-qingyan.php`（`usr/themes/你的主题/page-qingyan.php`）。
+文件名随意（例如 `says.php`）。文件头必须保留 `@package custom`——Typecho
+就是靠它把这个文件认成「自定义模板」的，**文件名本身不参与匹配**。
 
-**② 建独立页面**：后台 → 管理 → 独立页面 → 新建，标题随意，
-**别名填 `qingyan`**（决定 URL 与模板文件名匹配），内容留空，发布。
+**② 建独立页面**：后台 → 管理 → 独立页面 → 新建，标题随意，内容留空；
+**别名不要填插件的接口路径**（默认 `qingyan`，会和插件自己的 `/qingyan` 路由冲突），
+建议用 `says` 之类。然后在编辑页右侧的「**自定义模板**」下拉里选中刚复制的文件
+（如 `says.php`），发布。
 
-**③ 访问**：`https://你的域名/qingyan.html`。主题的 header / sidebar / footer
-照常渲染，时间线出现在正文位置。
+**③ 访问**：`https://你的域名/says.html`（固定链接为 `/<别名>.html`）。
+主题的 header / sidebar / footer 照常渲染，时间线出现在正文位置。
+最后把插件设置里的「前台展示页地址」填成这个页面地址。
 
 > 模板里的 `need('header.php')` 是通用写法，不同主题文件名可能不同（有的叫
 > `head.php`），照着你主题 `page.php` 的结构改即可。
@@ -139,7 +143,7 @@
     // 'size' => 10,     // 可选：只给这个页面单独指定条数；不写就跟随插件设置
     'page'    => 1,      // 页码，默认取 URL 的 ?page=
     'editor'  => true,   // 是否显示发布框，默认自动（管理员可见）
-    'css'     => true,   // 是否引入自带样式，想完全自己写样式传 false
+    'css'     => true,   // 是否引入自带 CSS；传 false 只剩设置里的「自定义 CSS」
     'baseUrl' => '',     // 分页基地址，默认当前页面
     'keyword' => '',     // 只显示匹配的内容（轻言搜索页用）
 )); ?>
@@ -155,6 +159,7 @@
 
 <?php echo $qy['css']; ?>
 <div class="qy-embed" id="qy-embed">
+    <?php echo $qy['search']; // 搜索框；searchOn 关闭时为空串 ?>
     <?php echo $qy['editor']; ?>
     <div class="qy-timeline" id="qy-timeline">
         <?php if ($qy['empty']): ?>
@@ -221,7 +226,7 @@ JS 靠这些属性做事件委托，删掉对应功能就失效：
 
 1. **改 class 名** —— 模板里换成自己的命名，写对应 CSS
 2. **覆盖样式**（推荐）—— 保留 `qy-` 前缀，在主题 CSS 里写同名选择器（放在插件 CSS 之后）
-3. **彻底不用插件样式** —— `query(array('css' => false))`，完全自己写
+3. **不用自带样式** —— `query(array('css' => false))`（设置里的「自定义 CSS」仍会输出，按需清空）
 
 ```css
 .qy-item { border-bottom-color: #eee; }
@@ -235,8 +240,8 @@ JS 靠这些属性做事件委托，删掉对应功能就失效：
 <?php $list = Qingyan_Plugin::renderList(10); // 等价于 latest(10) ?>
 ```
 
-返回**未格式化**的原始记录，字段：`id` `author` `authorMail` `content` `likes`
-`commentsNum` `created` `status`。格式化用 `Qingyan_Model::format()`，
+返回**未格式化**的原始记录，字段：`id` `author` `authorMail` `content` `images`
+`mood` `likes` `commentsNum` `created` `status`（`images` 已解码为数组）。格式化用 `Qingyan_Model::format()`，
 相对时间用 `Qingyan_Model::timeAgo()`。这种方式不含发布框、分页与交互。
 
 ---
@@ -253,6 +258,7 @@ JS 靠这些属性做事件委托，删掉对应功能就失效：
 | 表情短代码 / 每页条数 | 正文增强与列表条数 |
 | 搜索框 | 是否在时间线顶部显示「搜索轻言」；独立页与嵌入页都受控 |
 | 点赞 / 评论 / 评论权限 / 评论审核 | 互动开关与审核策略 |
+| 前台删除按钮 | 默认关闭；开启后管理员在前台可删内容/评论（接口同样校验） |
 | 评论间隔 | 同 IP 两次评论的最小间隔（秒），防刷 |
 | 头像 / 头像镜像 | 默认使用 cravatar 国内镜像 |
 | 自定义 CSS | 追加到页面底部，可覆盖默认样式 |
@@ -271,12 +277,13 @@ usr/plugins/Qingyan/
 ├── panel.php               后台管理面板视图
 ├── compat.php              版本兼容层：1.2 / 1.3 类名与常量双向映射
 ├── Renderer.php            渲染器：整页模式与嵌入模式共用
-├── theme-example.php       主题模板示例，复制到主题目录改名 page-qingyan.php
+├── theme-example.php       主题模板示例（@package custom，复制到主题目录用）
 ├── Doctor.php              环境自检（后台页签，无需传文件）
 ├── updater.php             在线更新器（UPDATE-STANDARD 参考实现，1.3 专用）
 ├── assets/
 │   ├── qingyan.css         前台样式（qy- 前缀，CSS 变量 + 深色模式）
 │   ├── qingyan.js          前台交互（原生 JS，无依赖）
+│   ├── emoji/              心情徽章用的预置 SVG（normal / happy / sad …）
 │   ├── front.css           独立前台页面外壳样式
 │   └── admin.css           后台面板样式（qya- 前缀）
 └── README.md               本文档
@@ -292,11 +299,13 @@ usr/plugins/Qingyan/
 
 | 动作 | 方法 | 参数 | 说明 |
 |---|---|---|---|
+| `ping` | GET | — | 返回 `{ version }`，用于探活 |
 | `list` | GET | `page` `limit`（≤50）`q`（关键词） | 返回 `data.list[]`，每项含 `id / author / content / html / images[] / likes / comments / created / ago / url` |
 | `post` | POST | `content`（≤2000 字）`images`（≤9，数组或换行）`token` | 仅管理员，发布后直接公开 |
 | `like` | POST | `id` | 同一访客重复请求即取消点赞，返回 `{ liked, likes }` |
 | `comment` | POST | `id` `text` `author` `mail` | 返回 `{ id, count, status, html }`，`html` 可直接插入 |
 | `comments` | GET | `id` | 返回评论 `html` 片段 |
+| `fragment` | GET | `page` `limit` `base` `keyword` | Ajax 翻页片段 `{ html, pager, page, pages, total, empty }` |
 | `upload` | POST | `image`（文件，≤5MB） | 仅管理员，返回 `{ rel, url }`，供 `post` 的 `images` 使用 |
 | `delete` | POST | `id` `type`（`post` / `comment`） | 仅管理员 |
 
@@ -314,7 +323,8 @@ usr/plugins/Qingyan/
 | `id` | int | 主键 |
 | `authorId` / `author` / `authorMail` | int / varchar | 作者信息（发布者为管理员账号） |
 | `content` | text | 正文 |
-| `images` | text | 图片地址，JSON 数组 |
+| `images` | text | 配图地址，JSON 数组（`qingyan/YYYY/MM/xxx.jpg`） |
+| `mood` | varchar | 卡片左侧心情徽章：`avatar`（默认，显示头像）或 `assets/emoji/` 里的预置键；旧值 `default` 自动归到 `avatar` |
 | `liked` | text | 点赞指纹，JSON 数组（IP + UA 哈希，不存明文 IP；单条上限 2000） |
 | `comments` | text | 评论，JSON 数组（含 id / 作者 / 邮箱 / 评论 IP / 状态 / 时间；**IP 为明文**，用于限频与审核；单条上限 500） |
 | `status` | varchar | `publish` / `pending` / `draft` |
@@ -386,12 +396,30 @@ header / menu / footer，复用后台布局与按钮样式。用的都是 Typech
 
 ## 变更与维护
 
+### 2.9.0
+
+- **文档修正（无行为变化）**：
+  - 主题嵌入页写清正确做法——模板文件靠 `@package custom` 识别、在页面编辑器里选模板，
+    别名不要与插件接口路径冲突（旧文档的「改名 page-qingyan.php + 别名 qingyan」会让页面不可达）。
+  - 配图说明去掉「灯箱」（实际是点击新窗口看原图）。
+  - 补齐 API `ping` / `fragment` / `upload`、数据表 `mood` 字段、`assets/emoji/` 目录、
+    `前台删除` 配置项；`query()` 示例补 `search` 输出；`css => false` 的真实效果写明。
+
 ### 2.8.10
 
 - **轻言自带搜索**：独立页与主题嵌入页都加了搜索框（设置项「搜索框」可关）；
   搜索词走 `?q=`，分页与 Ajax 翻页保留关键词；新增 `list?q=` 接口参数。
 - **话题改为指向轻言搜索**：`#话题#` → `前台?q=话题`，不再依赖 SearchPlus 的轻言命中。
 - SearchPlus 侧可移除「搜索轻言」相关代码（两边互不影响）。
+
+### 2.8.9
+
+- 文档/示例修正：主题模板不再照抄 `render(array('size' => 10))`——不传 `size`
+  才跟随设置项「每页条数」；设置项说明补充覆盖规则。
+
+### 2.8.8
+
+- 修复设置页「已是最新版本」提示条 `<div>` 未闭合导致整个表单被绿色背景包住。
 
 ### 2.8.7
 
