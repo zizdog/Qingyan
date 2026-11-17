@@ -13,7 +13,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.9
+ * @version 2.8.10
  */
 class Qingyan_Model
 {
@@ -2271,7 +2271,7 @@ class Qingyan_Model
                     $plain = html_entity_decode($m[1], ENT_QUOTES, 'UTF-8');
 
                     return '<a class="qy-topic" href="'
-                        . htmlspecialchars(Qingyan_Model::siteSearchUrl($plain), ENT_QUOTES, 'UTF-8') . '">#'
+                        . htmlspecialchars(Qingyan_Plugin::searchUrl($plain), ENT_QUOTES, 'UTF-8') . '">#'
                         . htmlspecialchars($plain, ENT_QUOTES, 'UTF-8') . '#</a>';
                 },
                 $part
@@ -2309,14 +2309,17 @@ class Qingyan_Model
     }
 
     /**
-     * topicUrl() 的别名 —— 话题链接用的就是站内搜索地址
+     * 话题链接地址：轻言自己的搜索结果（`前台?q=话题`）
+     *
+     * 以前指向站点搜索 `/?s=`（由 SearchPlus 附带轻言命中）；
+     * 2026-11-17 起轻言自带搜索，话题直接落在轻言结果页，不再依赖别的插件。
      *
      * @param string $word
      * @return string
      */
     public static function topicUrl($word)
     {
-        return self::siteSearchUrl($word);
+        return Qingyan_Plugin::searchUrl($word);
     }
 
     /**

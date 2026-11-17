@@ -5,7 +5,7 @@
  *
  * @package Qingyan
  * @author  zizdog
- * @version 2.8.9
+ * @version 2.8.10
  * @link    https://zizdog.com
  */
 
@@ -30,7 +30,7 @@ namespace {
     class Qingyan_Plugin_Base implements Typecho_Plugin_Interface
     {
         /** 插件版本 */
-        const VERSION = '2.8.9';
+        const VERSION = '2.8.10';
 
         /** 路由名：API 接口 */
         const ROUTE_API = 'qingyan_api';
@@ -302,6 +302,16 @@ namespace {
                 _t('前台时间线每页显示的短内容数量，建议 5 - 20。注意：主题模板调用 render() 时若显式传了 size，会覆盖此设置。')
             );
             $form->addInput($pageSize->addRule('isInteger', _t('请填写整数')));
+
+            $clsRadio = self::elementClass('Radio');
+            $searchOn = new $clsRadio(
+                'searchOn',
+                array('1' => _t('显示'), '0' => _t('隐藏')),
+                '1',
+                _t('搜索框'),
+                _t('在时间线顶部显示「搜索轻言」输入框；独立页 /qingyan 与主题嵌入页都生效。')
+            );
+            $form->addInput($searchOn);
 
             $clsRadio = self::elementClass('Radio');
             $likeOn = new $clsRadio(
@@ -731,6 +741,7 @@ namespace {
                 'frontTitle'      => '轻言',
                 'emojiOn'         => '1',
                 'pageSize'        => '10',
+                'searchOn'        => '1',
                 'likeOn'          => '1',
                 'commentOn'       => '1',
                 // 前台删除按钮：**默认关闭**（用户要求）。接口侧也会一并拒绝。
@@ -1559,6 +1570,26 @@ namespace {
         public static function query($opts = array())
         {
             return Qingyan_Renderer::snapshot($opts);
+        }
+
+        /**
+         * 轻言搜索结果地址（前台页 + ?q=关键词）
+         *
+         * @param string $word
+         * @return string
+         */
+        public static function searchUrl($word)
+        {
+            $word = trim((string) $word);
+            $base = self::frontUrl(1);
+
+            if ('' === $word) {
+                return $base;
+            }
+
+            $sep = (false === strpos($base, '?')) ? '?' : '&';
+
+            return $base . $sep . 'q=' . urlencode($word);
         }
 
         /**

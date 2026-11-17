@@ -20,7 +20,7 @@ require_once dirname(__FILE__) . '/Renderer.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.9
+ * @version 2.8.10
  */
 class Qingyan_Front extends Typecho_Widget
 {
@@ -128,14 +128,16 @@ class Qingyan_Front extends Typecho_Widget
          * 搜「轻言」的入口（?q=）。想搜全站文章就直接用站点的搜索框，
          * 或者点结果页/话题里的 `?s=` 链接 —— 那边会同时列出轻言的命中。
          */ ?>
+        <?php if (Qingyan_Plugin::boolOpt('searchOn', true)) { ?>
         <form class="qy-standalone__search" method="get" action="<?php echo $esc(Qingyan_Plugin::frontPageUrl()); ?>" role="search">
             <input type="search" name="q" value="<?php echo $esc($keyword); ?>" placeholder="搜索轻言…" aria-label="搜索轻言">
             <button type="submit">搜索</button>
         </form>
+        <?php } ?>
     </header>
 
     <main class="qy-standalone__main">
-        <?php Qingyan_Renderer::timeline($page, array('baseUrl' => $baseUrl, 'keyword' => $keyword)); ?>
+        <?php Qingyan_Renderer::timeline($page, array('baseUrl' => $baseUrl, 'keyword' => $keyword, 'standalone' => true)); ?>
     </main>
 
     <footer class="qy-standalone__foot">

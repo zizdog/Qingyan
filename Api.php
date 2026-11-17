@@ -12,7 +12,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.9
+ * @version 2.8.10
  */
 class Qingyan_Api extends Typecho_Widget
 {
@@ -107,10 +107,17 @@ class Qingyan_Api extends Typecho_Widget
      */
     protected function actionList()
     {
-        $page  = max(1, intval($this->input('page', 1)));
-        $limit = max(1, min(50, intval($this->input('limit', Qingyan_Plugin::intOpt('pageSize', 10)))));
-        $total = Qingyan_Model::count('publish');
-        $list  = Qingyan_Model::page($page, $limit, 'publish');
+        $page    = max(1, intval($this->input('page', 1)));
+        $limit   = max(1, min(50, intval($this->input('limit', Qingyan_Plugin::intOpt('pageSize', 10)))));
+        $keyword = trim((string) $this->input('q', ''));
+
+        if ('' !== $keyword) {
+            $total = Qingyan_Model::searchCount($keyword);
+            $list  = Qingyan_Model::search($keyword, $limit, ($page - 1) * $limit);
+        } else {
+            $total = Qingyan_Model::count('publish');
+            $list  = Qingyan_Model::page($page, $limit, 'publish');
+        }
 
         $items = array();
 

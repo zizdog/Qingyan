@@ -1123,3 +1123,66 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
+
+/* ---------- 搜索框（嵌入模式） ---------- */
+.qy-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+}
+
+.qy-search-input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--qy-line-strong);
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-input-bg);
+    color: var(--qy-fg);
+    font-size: 14px;
+    outline: none;
+}
+
+.qy-search-input:focus {
+    border-color: var(--qy-accent);
+    box-shadow: 0 0 0 3px var(--qy-accent-soft);
+}
+
+.qy-search-btn {
+    flex: 0 0 auto;
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid transparent;
+    border-radius: var(--qy-radius-sm);
+    background: var(--qy-accent);
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.qy-search-btn:hover {
+    filter: brightness(1.05);
+}
+
+.qy-search-clear {
+    flex: 0 0 auto;
+    color: var(--qy-muted);
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.qy-search-clear:hover {
+    color: var(--qy-accent);
+}
+
+@media (max-width: 560px) {
+    .qy-search {
+        gap: 6px;
+    }
+
+    .qy-search-btn {
+        padding: 0 12px;
+    }
+}

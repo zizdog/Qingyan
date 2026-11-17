@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.8.9
+ * @version 2.8.10
  */
 class Qingyan_Renderer
 {
@@ -121,6 +121,8 @@ class Qingyan_Renderer
             'avatarOn'  => Qingyan_Plugin::boolOpt('avatar', true),
             'token'     => self::token(),
             'baseUrl'   => isset($opts['baseUrl']) ? (string) $opts['baseUrl'] : self::currentUrl(),
+            // 独立页 Front 自己有一份搜索框；嵌入模式才在时间线里再放一个
+            'searchOn'  => empty($opts['standalone']) && Qingyan_Plugin::boolOpt('searchOn', true),
         );
 
         // 样式：嵌入模式默认引入，主题想完全自定义样式时传 css => false
@@ -132,6 +134,10 @@ class Qingyan_Renderer
         // 搜索模式下不显示发布框：用户此刻要的是结果，不是发新内容
         if ($showEditor && !$searching) {
             self::editor($ctx);
+        }
+
+        if (!empty($ctx['searchOn'])) {
+            self::searchForm($ctx);
         }
 
         echo '<div class="qy-timeline" id="qy-timeline">' . "\n";
@@ -194,6 +200,56 @@ class Qingyan_Renderer
             <a class="qy-search-head-site" href="<?php echo self::esc(Qingyan_Model::siteSearchUrl($ctx['keyword'])); ?>">也在文章里搜 &rarr;</a>
         </div>
         <?php
+    }
+
+    /**
+     * 时间线顶部的小搜索框（嵌入模式）
+     *
+     * 独立前台 /qingyan 的搜索框在 Front.php 的外壳里；主题嵌入页没有外壳，
+     * 所以由这里补一个。GET 到当前页面路径，只带 q 参数。
+     */
+    protected static function searchForm($ctx)
+    {
+        $keyword = isset($ctx['keyword']) ? (string) $ctx['keyword'] : '';
+        $action  = self::searchActionUrl();
+        $clear   = '';
+
+        if (!empty($ctx['searching'])) {
+            $clear = '<a class="qy-search-clear" href="'
+                . self::esc(Qingyan_Plugin::frontUrl()) . '">清除</a>';
+        }
+
+        ?>
+        <form class="qy-search" method="get" action="<?php echo self::esc($action); ?>" role="search">
+            <input class="qy-search-input" type="search" name="q" value="<?php echo self::esc($keyword); ?>"
+                   placeholder="<?php echo self::esc('搜索轻言…'); ?>" aria-label="<?php echo self::esc('搜索轻言'); ?>">
+            <button class="qy-search-btn" type="submit"><?php echo self::esc('搜索'); ?></button>
+            <?php echo $clear; ?>
+        </form>
+        <?php
+    }
+
+    /**
+     * 嵌入页搜索框的提交地址：当前路径（去掉查询串）
+     *
+     * 用当前路径而不是 frontUrl，搜索后仍停留在同一个嵌入页。
+     *
+     * @return string
+     */
+    protected static function searchActionUrl()
+    {
+        $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+
+        if ('' !== $uri) {
+            $path = explode('?', $uri, 2);
+            $path = (string) $path[0];
+
+            if ('' !== $path) {
+                return $path;
+            }
+        }
+
+        return Qingyan_Plugin::frontUrl(1);
     }
 
     /* ------------------------------------------------------------------ */
@@ -729,6 +785,7 @@ class Qingyan_Renderer
             'avatarOn'  => Qingyan_Plugin::boolOpt('avatar', true),
             'token'     => self::token(),
             'baseUrl'   => $baseUrl,
+            'searchOn'  => empty($opts['standalone']) && Qingyan_Plugin::boolOpt('searchOn', true),
         );
 
         $items = array();
@@ -755,6 +812,7 @@ class Qingyan_Renderer
         return array(
             'list'      => $items,
             'editor'    => $ctx['canPost'] ? self::capture(function () use ($ctx) { self::editor($ctx); }) : '',
+            'search'    => !empty($ctx['searchOn']) ? self::capture(function () use ($ctx) { self::searchForm($ctx); }) : '',
             'pager'     => self::capture(function () use ($ctx) { self::pager($ctx); }),
             'emptyHtml' => self::capture(function () { self::emptyState(); }),
             'css'       => $cssHtml,
