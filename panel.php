@@ -10,7 +10,7 @@
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.3
+ * @version 2.9.4
  */
 
 if (!defined('__TYPECHO_ADMIN__')) {
@@ -720,12 +720,7 @@ if ('doctor' === $panelAction) {
                 <!-- 内容列表 -->
                 <?php /* 批量操作表单。勾选框在下面的表格里，用 HTML5 form 属性挂到这个表单上：
                         每行已经有自己的 <form>（删除 / 通过），整张表再套一层 form 会把它们冲掉。 */ ?>
-                <form id="qy-bulk" method="post" action="<?php echo qy_admin_esc($options->adminUrl . $panel); ?>">
-                    <input type="hidden" name="_qy_token" value="<?php echo qy_admin_esc($token); ?>">
-                    <input type="hidden" name="back" value="<?php echo qy_admin_esc($back); ?>">
-                    <input type="hidden" name="action" value="bulk">
-
-                    <div class="typecho-list-operate clearfix">
+                <div class="typecho-list-operate clearfix">
                         <h3 class="qya-title">
                             <?php if ($searching) { ?>
                             <?php _e('搜索结果'); ?>「<?php echo qy_admin_esc($keyword); ?>」（<?php echo $total; ?>）
@@ -773,6 +768,13 @@ if ('doctor' === $panelAction) {
                         </div>
                         <?php } ?>
                     </div>
+
+                <?php /* 批量表单只放隐藏字段：搜索表单是 GET，不能嵌在它里面（浏览器会忽略内层 form）。
+                        表格里的勾选框用 HTML5 form="qy-bulk" 关联。 */ ?>
+                <form id="qy-bulk" method="post" action="<?php echo qy_admin_esc($options->adminUrl . $panel); ?>">
+                    <input type="hidden" name="_qy_token" value="<?php echo qy_admin_esc($token); ?>">
+                    <input type="hidden" name="back" value="<?php echo qy_admin_esc($back); ?>">
+                    <input type="hidden" name="action" value="bulk">
                 </form>
 
                 <div class="typecho-table-wrap">

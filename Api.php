@@ -12,7 +12,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.3
+ * @version 2.9.4
  */
 class Qingyan_Api extends Typecho_Widget
 {

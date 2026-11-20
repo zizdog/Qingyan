@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.3
+ * @version 2.9.4
  */
 class Qingyan_Renderer
 {
@@ -237,7 +237,7 @@ class Qingyan_Renderer
         }
 
         ?>
-        <form class="qy-search" method="get" action="<?php echo self::esc($action); ?>" role="search">
+        <form class="qy-search" method="get" action="<?php echo self::esc($action); ?>" role="search" data-no-ajax="1" no-pjax>
             <input class="qy-search-input" type="search" name="q" value="<?php echo self::esc($keyword); ?>"
                    placeholder="<?php echo self::esc('搜索轻言（至少 2 个字）…'); ?>" aria-label="<?php echo self::esc('搜索轻言'); ?>">
             <button class="qy-search-btn" type="submit"><?php echo self::esc('搜索'); ?></button>
