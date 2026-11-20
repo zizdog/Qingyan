@@ -424,6 +424,41 @@
     }
 
     /* ================================================================ */
+    /* 搜索表单                                                          */
+    /* ================================================================ */
+
+    /*
+     * 主题（GardenWalk 等）可能用 PJAX 拦截 document 上的 GET form submit；
+     * 旧版 PJAX 会把提交改成 fetch 并丢掉 query（表现为「点搜索回到原处」）。
+     * 这里在**捕获阶段**先接管：阻止后续监听器，自己用 location.assign 走一次
+     * 真正的页面导航，保证 ?q= 一定送到服务端。
+     */
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+
+        if (!form || !form.classList) {
+            return;
+        }
+
+        var isEmbed      = form.classList.contains('qy-search');
+        var isStandalone = form.classList.contains('qy-standalone__search');
+
+        if (!isEmbed && !isStandalone) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        var action = form.getAttribute('action') || window.location.pathname;
+        var input  = form.querySelector('input[name="q"]');
+        var q      = input ? input.value.trim() : '';
+        var sep    = action.indexOf('?') > -1 ? '&' : '?';
+
+        window.location.assign(q ? action + sep + 'q=' + encodeURIComponent(q) : action);
+    }, true);
+
+    /* ================================================================ */
     /* 评论表单                                                          */
     /* ================================================================ */
 

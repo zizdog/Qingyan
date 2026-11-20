@@ -403,6 +403,12 @@ header / menu / footer，复用后台布局与按钮样式。用的都是 Typech
 
 ## 变更与维护
 
+### 2.9.5
+
+- **修复主题嵌入页搜索被 PJAX 拦截**：在 `qingyan.js` 里用捕获阶段的 submit 处理器接管
+  `.qy-search` / `.qy-standalone__search`，自己拼 `?q=` 并 `location.assign`，
+  不再受主题 PJAX（含旧版）影响；服务端搜索逻辑不变。
+
 ### 2.9.4
 
 - **修复后台搜索点击无效**：内容搜索表单原来嵌在批量操作表单里（HTML 不允许嵌套 form），
