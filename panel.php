@@ -10,7 +10,7 @@
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.1
+ * @version 2.9.2
  */
 
 if (!defined('__TYPECHO_ADMIN__')) {
@@ -146,50 +146,14 @@ function qy_pager($current, $totalPages, $baseUrl, $param = 'p')
         return '';
     }
 
-    $link = function ($page) use ($baseUrl, $param) {
-        return '<a href="' . qy_admin_esc($baseUrl . '&' . $param . '=' . intval($page)) . '">';
+    // 与前台共用同一套页码结构（nav.qy-pager > .qy-page），样式见 admin.css
+    $url = function ($page) use ($baseUrl, $param) {
+        $sep = (false === strpos($baseUrl, '?')) ? '?' : '&';
+
+        return $baseUrl . $sep . $param . '=' . intval($page);
     };
 
-    $from = max(1, $current - 2);
-    $to   = min($totalPages, $current + 2);
-    $out  = '<ul class="typecho-pager">';
-
-    // 上一页
-    if ($current > 1) {
-        $out .= '<li class="prev">' . $link($current - 1) . '&laquo;</a></li>';
-    }
-
-    // 首页（离得远时补出来）
-    if ($from > 1) {
-        $out .= '<li>' . $link(1) . '1</a></li>';
-
-        if ($from > 2) {
-            $out .= '<li><span>...</span></li>';
-        }
-    }
-
-    // 中间窗口
-    for ($i = $from; $i <= $to; $i++) {
-        // 当前页在核心的 DOM 里也是 <a>（样式靠 .current a 上底色），不是 <span>
-        $out .= ($i === $current ? '<li class="current">' : '<li>')
-            . $link($i) . $i . '</a></li>';
-    }
-
-    // 末页
-    if ($to < $totalPages) {
-        if ($to < $totalPages - 1) {
-            $out .= '<li><span>...</span></li>';
-        }
-
-        $out .= '<li>' . $link($totalPages) . $totalPages . '</a></li>';
-    }
-
-    // 下一页
-    if ($current < $totalPages) {
-        $out .= '<li class="next">' . $link($current + 1) . '&raquo;</a></li>';
-    }
-
-    return $out . '</ul>';
+    return Qingyan_Renderer::pagerMarkup($current, $totalPages, $url, '');
 }
 
 /**
@@ -199,11 +163,21 @@ function qy_pager($current, $totalPages, $baseUrl, $param = 'p')
  * @param int $cp
  * @return string
  */
-function qy_back_url($p = 1, $cp = 1)
+function qy_back_url($p = 1, $cp = 1, $q = '', $cq = '')
 {
     global $options, $panel;
 
-    return $options->adminUrl . $panel . '&p=' . intval($p) . '&cp=' . intval($cp);
+    $url = $options->adminUrl . $panel . '&p=' . intval($p) . '&cp=' . intval($cp);
+
+    if ('' !== (string) $q) {
+        $url .= '&q=' . urlencode((string) $q);
+    }
+
+    if ('' !== (string) $cq) {
+        $url .= '&cq=' . urlencode((string) $cq);
+    }
+
+    return $url;
 }
 
 /* ------------------------------------------------------------------ */
@@ -492,11 +466,39 @@ $page = max(1, intval($request->get('p', 1)));
  */
 $panelSize = max(1, min(50, Qingyan_Plugin::intOpt('pageSize', 10)));
 
-$size     = $panelSize;
-$total    = Qingyan_Model::count('all');
-$pages    = max(1, intval(ceil($total / $size)));
-$page     = min($page, $pages);
-$rows     = $total > 0 ? Qingyan_Model::page($page, $size, 'all') : array();
+// 后台搜索：内容列表用 q，评论列表用 cq（与前台同一套「至少 2 个字」规则）
+$qyCleanKeyword = function ($raw) {
+    $kw = trim((string) $raw);
+    $kw = preg_replace('/\s+/u', ' ', strip_tags($kw));
+    $kw = is_string($kw) ? $kw : '';
+
+    return function_exists('mb_substr') ? mb_substr($kw, 0, 32, 'UTF-8') : substr($kw, 0, 32);
+};
+
+$keyword          = $qyCleanKeyword($request->get('q', ''));
+$commentKeyword   = $qyCleanKeyword($request->get('cq', ''));
+$searching        = '' !== $keyword;
+$commentSearching = '' !== $commentKeyword;
+
+$size = $panelSize;
+$page = max(1, intval($request->get('p', 1)));
+
+if ($searching && Qingyan_Model::searchKeywordOk($keyword)) {
+    $total = Qingyan_Model::searchCount($keyword, 'all');
+    $pages = max(1, intval(ceil($total / $size)));
+    $page  = min($page, $pages);
+    $rows  = $total > 0 ? Qingyan_Model::search($keyword, $size, ($page - 1) * $size, 'all') : array();
+} elseif ($searching) {
+    $total = 0;
+    $pages = 1;
+    $page  = 1;
+    $rows  = array();
+} else {
+    $total = Qingyan_Model::count('all');
+    $pages = max(1, intval(ceil($total / $size)));
+    $page  = min($page, $pages);
+    $rows  = $total > 0 ? Qingyan_Model::page($page, $size, 'all') : array();
+}
 
 $statAll     = Qingyan_Model::count('all');
 $statPublish = Qingyan_Model::count('publish');
@@ -514,16 +516,41 @@ foreach ($allComments as $qyComment) {
     }
 }
 
+$commentList = $allComments;
+
+if ($commentSearching) {
+    if (!Qingyan_Model::searchKeywordOk($commentKeyword)) {
+        $commentList = array();
+    } else {
+        $needle = $commentKeyword;
+        $commentList = array();
+
+        foreach ($allComments as $qyComment) {
+            $hay = (isset($qyComment['text']) ? $qyComment['text'] : '')
+                . ' ' . (isset($qyComment['author']) ? $qyComment['author'] : '')
+                . ' ' . (isset($qyComment['mail']) ? $qyComment['mail'] : '');
+
+            $hit = function_exists('mb_stripos')
+                ? false !== mb_stripos($hay, $needle, 0, 'UTF-8')
+                : false !== stripos($hay, $needle);
+
+            if ($hit) {
+                $commentList[] = $qyComment;
+            }
+        }
+    }
+}
+
 $commentPage  = max(1, intval($request->get('cp', 1)));
 $commentSize  = $panelSize;
-$commentPages = max(1, intval(ceil($statComment / $commentSize)));
+$commentPages = max(1, intval(ceil(count($commentList) / $commentSize)));
 $commentPage  = min($commentPage, $commentPages);
-$comments     = array_slice($allComments, ($commentPage - 1) * $commentSize, $commentSize);
+$comments     = array_slice($commentList, ($commentPage - 1) * $commentSize, $commentSize);
 
 $editId = intval($request->get('edit', 0));
 $editRow = 0 < $editId ? Qingyan_Model::get($editId) : NULL;
 
-$back = qy_back_url($page, $commentPage);
+$back = qy_back_url($page, $commentPage, $keyword, $commentKeyword);
 
 require_once dirname(__FILE__) . '/Doctor.php';
 
@@ -699,7 +726,23 @@ if ('doctor' === $panelAction) {
                     <input type="hidden" name="action" value="bulk">
 
                     <div class="typecho-list-operate clearfix">
-                        <h3 class="qya-title"><?php _e('全部轻言'); ?>（<?php echo $total; ?>）</h3>
+                        <h3 class="qya-title">
+                            <?php if ($searching) { ?>
+                            <?php _e('搜索结果'); ?>「<?php echo qy_admin_esc($keyword); ?>」（<?php echo $total; ?>）
+                            <?php } else { ?>
+                            <?php _e('全部轻言'); ?>（<?php echo $total; ?>）
+                            <?php } ?>
+                        </h3>
+
+                        <form class="qya-search" method="get" action="<?php echo qy_admin_esc($options->adminUrl . 'extending.php'); ?>" role="search">
+                            <input type="hidden" name="panel" value="Qingyan/panel.php">
+                            <input type="search" name="q" value="<?php echo qy_admin_esc($keyword); ?>"
+                                   placeholder="<?php _e('搜索内容（至少 2 个字）…'); ?>">
+                            <button type="submit" class="btn btn-s"><?php _e('搜索'); ?></button>
+                            <?php if ($searching) { ?>
+                            <a class="qya-search-clear" href="<?php echo qy_admin_esc($options->adminUrl . $panel); ?>"><?php _e('清除'); ?></a>
+                            <?php } ?>
+                        </form>
 
                         <?php if (!empty($rows)) { ?>
                         <div class="operate">
@@ -736,7 +779,15 @@ if ('doctor' === $panelAction) {
                     <?php if (empty($rows)) { ?>
                         <div class="typecho-list">
                             <div class="typecho-list-table-row notice">
-                                <p><?php _e('还没有内容，在上面写一条吧。'); ?></p>
+                                <p><?php
+                                    if ($searching && !Qingyan_Model::searchKeywordOk($keyword)) {
+                                        _e('关键词太短：至少输入 2 个字。');
+                                    } elseif ($searching) {
+                                        _e('没有匹配的内容。');
+                                    } else {
+                                        _e('还没有内容，在上面写一条吧。');
+                                    }
+                                ?></p>
                             </div>
                         </div>
                     <?php } else { ?>
@@ -839,18 +890,45 @@ if ('doctor' === $panelAction) {
                 </div>
 
                 <?php /* 与核心一致：分页放在 .typecho-table-wrap 外面，用 ul.typecho-pager */ ?>
-                <?php echo qy_pager($page, $pages, $options->adminUrl . $panel); ?>
+                <?php echo qy_pager($page, $pages, $options->adminUrl . $panel . ($searching ? '&q=' . urlencode($keyword) : '')); ?>
 
                 <!-- 评论管理 -->
                 <div class="typecho-list-operate clearfix">
-                    <h3 class="qya-title"><?php _e('评论管理'); ?>（<?php echo $statComment; ?><?php echo $statPendingCmt > 0 ? '，' . $statPendingCmt . ' ' . _t('待审') : ''; ?>）</h3>
+                    <h3 class="qya-title">
+                        <?php if ($commentSearching) { ?>
+                        <?php _e('评论搜索'); ?>「<?php echo qy_admin_esc($commentKeyword); ?>」（<?php echo count($commentList); ?> / <?php echo $statComment; ?>）
+                        <?php } else { ?>
+                        <?php _e('评论管理'); ?>（<?php echo $statComment; ?><?php echo $statPendingCmt > 0 ? '，' . $statPendingCmt . ' ' . _t('待审') : ''; ?>）
+                        <?php } ?>
+                    </h3>
+
+                    <form class="qya-search" method="get" action="<?php echo qy_admin_esc($options->adminUrl . 'extending.php'); ?>" role="search">
+                        <input type="hidden" name="panel" value="Qingyan/panel.php">
+                        <?php if ($searching) { ?>
+                        <input type="hidden" name="q" value="<?php echo qy_admin_esc($keyword); ?>">
+                        <?php } ?>
+                        <input type="search" name="cq" value="<?php echo qy_admin_esc($commentKeyword); ?>"
+                               placeholder="<?php _e('搜索评论内容 / 作者 / 邮箱…'); ?>">
+                        <button type="submit" class="btn btn-s"><?php _e('搜索'); ?></button>
+                        <?php if ($commentSearching) { ?>
+                        <a class="qya-search-clear" href="<?php echo qy_admin_esc($options->adminUrl . $panel . ($searching ? '&q=' . urlencode($keyword) : '')); ?>"><?php _e('清除'); ?></a>
+                        <?php } ?>
+                    </form>
                 </div>
 
                 <div class="typecho-table-wrap">
                     <?php if (empty($comments)) { ?>
                     <div class="typecho-list">
                         <div class="typecho-list-table-row notice">
-                            <p><?php _e('还没有评论。'); ?></p>
+                            <p><?php
+                                if ($commentSearching && !Qingyan_Model::searchKeywordOk($commentKeyword)) {
+                                    _e('关键词太短：至少输入 2 个字。');
+                                } elseif ($commentSearching) {
+                                    _e('没有匹配的评论。');
+                                } else {
+                                    _e('还没有评论。');
+                                }
+                            ?></p>
                         </div>
                     </div>
                     <?php } else { ?>
@@ -921,7 +999,13 @@ if ('doctor' === $panelAction) {
                     <?php } ?>
                 </div>
 
-                <?php echo qy_pager($commentPage, $commentPages, $options->adminUrl . $panel . '&p=' . $page, 'cp'); ?>
+                <?php
+                $qyCommentBase = $options->adminUrl . $panel
+                    . ($searching ? '&q=' . urlencode($keyword) : '')
+                    . ($commentSearching ? '&cq=' . urlencode($commentKeyword) : '')
+                    . '&p=' . $page;
+                echo qy_pager($commentPage, $commentPages, $qyCommentBase, 'cp');
+                ?>
 
             </div>
         </div>

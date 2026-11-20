@@ -20,7 +20,7 @@ require_once dirname(__FILE__) . '/Renderer.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.1
+ * @version 2.9.2
  */
 class Qingyan_Front extends Typecho_Widget
 {
@@ -130,7 +130,7 @@ class Qingyan_Front extends Typecho_Widget
          */ ?>
         <?php if (Qingyan_Plugin::boolOpt('searchOn', true)) { ?>
         <form class="qy-standalone__search" method="get" action="<?php echo $esc(Qingyan_Plugin::frontPageUrl()); ?>" role="search">
-            <input type="search" name="q" value="<?php echo $esc($keyword); ?>" placeholder="搜索轻言…" aria-label="搜索轻言">
+            <input type="search" name="q" value="<?php echo $esc($keyword); ?>" placeholder="搜索轻言（至少 2 个字）…" aria-label="搜索轻言">
             <button type="submit">搜索</button>
         </form>
         <?php } ?>

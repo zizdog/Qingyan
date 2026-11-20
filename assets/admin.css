@@ -642,3 +642,87 @@
     border-radius: var(--qya-radius);
     border: 1px solid var(--qya-line);
 }
+
+/* ---------- 分页（与前台共用 qy-pager 结构） ---------- */
+.qya-scope .qy-pager {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 18px 0 6px;
+}
+
+.qya-scope .qy-page {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 9px;
+    border: 1px solid var(--qya-line);
+    border-radius: var(--qya-radius);
+    background: rgba(128, 128, 128, .04);
+    color: var(--qya-muted);
+    font-size: 13px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+}
+
+.qya-scope .qy-page:hover {
+    border-color: var(--qya-accent);
+    color: var(--qya-accent);
+}
+
+.qya-scope .qy-page.is-current {
+    border-color: var(--qya-accent);
+    background: var(--qya-accent);
+    color: #fff;
+    cursor: default;
+}
+
+.qya-scope .qy-page.is-disabled {
+    opacity: .45;
+    cursor: default;
+}
+
+.qya-scope .qy-gap {
+    padding: 0 2px;
+    color: var(--qya-muted);
+}
+
+/* ---------- 后台搜索 ---------- */
+.qya-search {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.qya-search input[type="search"] {
+    height: 32px;
+    min-width: 220px;
+    padding: 0 10px;
+    border: 1px solid var(--qya-line);
+    border-radius: var(--qya-radius);
+    background: rgba(128, 128, 128, .05);
+    color: inherit;
+    font-size: 13px;
+}
+
+.qya-search input[type="search"]:focus {
+    border-color: var(--qya-accent);
+    outline: none;
+}
+
+.qya-search-clear {
+    font-size: 13px;
+    color: var(--qya-muted);
+    text-decoration: none;
+}
+
+.qya-search-clear:hover {
+    color: var(--qya-accent);
+}

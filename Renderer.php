@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.1
+ * @version 2.9.2
  */
 class Qingyan_Renderer
 {
@@ -171,6 +171,15 @@ class Qingyan_Renderer
     protected static function emptyState($keyword = '')
     {
         if ('' !== $keyword) {
+            if (!Qingyan_Model::searchKeywordOk($keyword)) {
+                echo '<div class="qy-empty">'
+                    . '<p>关键词「' . self::esc($keyword) . '」太短，至少输入 <b>2 个字</b>再搜。</p>'
+                    . '<p class="qy-empty-hint">单字匹配范围太大，会把整条时间线都翻出来，所以不做搜索。</p>'
+                    . '</div>' . "\n";
+
+                return;
+            }
+
             echo '<div class="qy-empty">'
                 . '<p>轻言里没有找到包含「' . self::esc($keyword) . '」的内容。</p>'
                 . '<p class="qy-empty-hint"><a href="'
@@ -193,11 +202,18 @@ class Qingyan_Renderer
     protected static function searchHead($ctx)
     {
         ?>
+        <?php $qySearchOk = Qingyan_Model::searchKeywordOk($ctx['keyword']); ?>
         <div class="qy-search-head" id="qy-search-head">
             <span class="qy-search-head-label">在轻言里搜：<b><?php echo self::esc($ctx['keyword']); ?></b></span>
+            <?php if ($qySearchOk) { ?>
             <span class="qy-search-head-count"><?php echo intval($ctx['total']); ?> 条</span>
+            <?php } else { ?>
+            <span class="qy-search-head-hint">关键词至少 2 个字</span>
+            <?php } ?>
             <a class="qy-search-head-clear" href="<?php echo self::esc(Qingyan_Plugin::frontUrl()); ?>">清除</a>
+            <?php if ($qySearchOk) { ?>
             <a class="qy-search-head-site" href="<?php echo self::esc(Qingyan_Model::siteSearchUrl($ctx['keyword'])); ?>">也在文章里搜 &rarr;</a>
+            <?php } ?>
         </div>
         <?php
     }
@@ -222,7 +238,7 @@ class Qingyan_Renderer
         ?>
         <form class="qy-search" method="get" action="<?php echo self::esc($action); ?>" role="search">
             <input class="qy-search-input" type="search" name="q" value="<?php echo self::esc($keyword); ?>"
-                   placeholder="<?php echo self::esc('搜索轻言…'); ?>" aria-label="<?php echo self::esc('搜索轻言'); ?>">
+                   placeholder="<?php echo self::esc('搜索轻言（至少 2 个字）…'); ?>" aria-label="<?php echo self::esc('搜索轻言'); ?>">
             <button class="qy-search-btn" type="submit"><?php echo self::esc('搜索'); ?></button>
             <?php echo $clear; ?>
         </form>
@@ -482,33 +498,61 @@ class Qingyan_Renderer
             return;
         }
 
-        $base  = $ctx['baseUrl'];
-        $url   = function ($n) use ($base) {
+        $base = $ctx['baseUrl'];
+        $url  = function ($n) use ($base) {
             $sep = (false === strpos($base, '?')) ? '?' : '&';
 
             return $base . (1 === $n ? '' : $sep . 'page=' . $n);
         };
 
-        $items = self::pagerItems($page, $pages, $url);
-        ?>
-        <nav class="qy-pager" id="qy-pager">
-            <?php foreach ($items as $item) { ?>
-                <?php if ('gap' === $item['type']) { ?>
-                <span class="qy-gap">…</span>
-                <?php } elseif ('prev' === $item['type'] || 'next' === $item['type']) { ?>
-                    <?php if (!empty($item['disabled'])) { ?>
-                    <span class="qy-page is-disabled"><?php echo self::esc($item['label']); ?></span>
-                    <?php } else { ?>
-                    <a class="qy-page" href="<?php echo self::esc($item['url']); ?>" data-page="<?php echo intval($item['page']); ?>"><?php echo self::esc($item['label']); ?></a>
-                    <?php } ?>
-                <?php } elseif (!empty($item['current'])) { ?>
-                <span class="qy-page is-current" data-page="<?php echo intval($item['page']); ?>"><?php echo self::esc($item['label']); ?></span>
-                <?php } else { ?>
-                <a class="qy-page" href="<?php echo self::esc($item['url']); ?>" data-page="<?php echo intval($item['page']); ?>"><?php echo self::esc($item['label']); ?></a>
-                <?php } ?>
-            <?php } ?>
-        </nav>
-        <?php
+        echo self::pagerMarkup($page, $pages, $url, 'qy-pager');
+    }
+
+    /**
+     * 生成分页 markup —— 前台时间线与后台管理列表共用同一套 DOM
+     *
+     * 结构固定为 nav.qy-pager > (a|span).qy-page / span.qy-gap，
+     * 前端 JS 依赖 .qy-page[data-page] 做 Ajax 翻页；后台只是复用同一份结构，
+     * 样式由 admin.css 里的 .qya-scope .qy-pager 适配。
+     *
+     * @param int      $current
+     * @param int      $pages
+     * @param callable $url 页码 → URL
+     * @param string   $id  前台需要 id="qy-pager" 供 JS 替换，后台传空
+     * @return string
+     */
+    public static function pagerMarkup($current, $pages, $url, $id = '')
+    {
+        $items = self::pagerItems($current, $pages, $url);
+
+        if (empty($items)) {
+            return '';
+        }
+
+        $out = '<nav class="qy-pager"'
+            . ('' !== (string) $id ? ' id="' . self::esc($id) . '"' : '')
+            . ' aria-label="' . self::esc('分页') . '">';
+
+        foreach ($items as $item) {
+            if ('gap' === $item['type']) {
+                $out .= '<span class="qy-gap" aria-hidden="true">…</span>';
+            } elseif ('prev' === $item['type'] || 'next' === $item['type']) {
+                if (!empty($item['disabled'])) {
+                    $out .= '<span class="qy-page is-disabled">' . self::esc($item['label']) . '</span>';
+                } else {
+                    $out .= '<a class="qy-page" href="' . self::esc($item['url'])
+                        . '" data-page="' . intval($item['page']) . '">' . self::esc($item['label']) . '</a>';
+                }
+            } elseif (!empty($item['current'])) {
+                $out .= '<span class="qy-page is-current" aria-current="page" data-page="'
+                    . intval($item['page']) . '">' . self::esc($item['label']) . '</span>';
+            } else {
+                $out .= '<a class="qy-page" href="' . self::esc($item['url'])
+                    . '" data-page="' . intval($item['page']) . '">' . self::esc($item['label']) . '</a>';
+            }
+        }
+
+        return $out . '</nav>';
     }
 
     /**
@@ -542,9 +586,11 @@ class Qingyan_Renderer
             'page'     => max(1, $page - 1),
         );
 
-        $start = max(1, $page - 2);
-        $end   = min($pages, $start + 4);
-        $start = max(1, $end - 4);
+        // 一次最多显示 10 个连续页码；再按需补首/末页和省略号
+        $window = 10;
+        $start  = max(1, $page - intdiv($window, 2));
+        $end    = min($pages, $start + $window - 1);
+        $start  = max(1, $end - $window + 1);
 
         if ($start > 1) {
             $items[] = array(

@@ -13,7 +13,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.1
+ * @version 2.9.2
  */
 class Qingyan_Model
 {
@@ -32,6 +32,9 @@ class Qingyan_Model
 
     /** 单条内容最多保留的评论数，防止 JSON 无限膨胀 */
     const MAX_COMMENTS = 500;
+
+    /** 搜索词最短长度（少于这个数不搜，避免「一个字的匹配输出一堆」） */
+    const MIN_SEARCH_LEN = 2;
 
     /** 单条内容最多几张配图 */
     const MAX_IMAGES = 9;
@@ -1367,6 +1370,16 @@ class Qingyan_Model
                 continue;
             }
 
+            $len = function_exists('mb_strlen')
+                ? mb_strlen($part, 'UTF-8')
+                : preg_match_all('/./u', $part);
+
+            // 单字（或单个字母）太宽泛：只保留 2 字以上的词，
+            // 否则「的」「了」这种会把整张表都命中。
+            if ($len < self::MIN_SEARCH_LEN) {
+                continue;
+            }
+
             $words[] = function_exists('mb_substr')
                 ? mb_substr($part, 0, 32, 'UTF-8')
                 : substr($part, 0, 32);
@@ -1376,15 +1389,32 @@ class Qingyan_Model
     }
 
     /**
+     * 关键词是否够长、值得搜
+     *
+     * UI 用它区分「没命中」和「关键词太短」（后者要提示至少 2 个字）。
+     *
+     * @param string $keyword
+     * @return bool
+     */
+    public static function searchKeywordOk($keyword)
+    {
+        return !empty(self::searchWords($keyword));
+    }
+
+    /**
      * 搜索用的查询对象（调用方再自己 order/limit）
      *
      * @param array $words searchWords() 的结果
      * @return Typecho_Db_Query
      */
-    protected static function searchSelect(array $words)
+    protected static function searchSelect(array $words, $status = 'publish')
     {
         $db     = self::db();
-        $select = $db->select()->from(self::T_POST)->where('status = ?', 'publish');
+        $select = $db->select()->from(self::T_POST);
+
+        if ('all' !== $status) {
+            $select->where('status = ?', $status);
+        }
 
         foreach ($words as $word) {
             // 只搜正文。评论存在 text 字段的 JSON 里，LIKE 进去会误伤且没法排序
@@ -1409,7 +1439,7 @@ class Qingyan_Model
      * @param string $keyword
      * @return int
      */
-    public static function searchCount($keyword)
+    public static function searchCount($keyword, $status = 'publish')
     {
         $words = self::searchWords($keyword);
 
@@ -1417,7 +1447,7 @@ class Qingyan_Model
             return 0;
         }
 
-        $select = self::searchSelect($words);
+        $select = self::searchSelect($words, $status);
         $select->select(array('COUNT(1)' => 'num'));
 
         $row = self::db()->fetchRow($select);
@@ -1433,7 +1463,7 @@ class Qingyan_Model
      * @param int    $offset
      * @return array
      */
-    public static function search($keyword, $limit = 10, $offset = 0)
+    public static function search($keyword, $limit = 10, $offset = 0, $status = 'publish')
     {
         $words = self::searchWords($keyword);
 
@@ -1443,7 +1473,7 @@ class Qingyan_Model
 
         $limit  = max(1, min(50, intval($limit)));
         $offset = max(0, intval($offset));
-        $select = self::searchSelect($words);
+        $select = self::searchSelect($words, $status);
 
         $select->order('created', QY_SORT_DESC)->offset($offset)->limit($limit);
 
