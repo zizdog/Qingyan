@@ -1191,3 +1191,11 @@
     color: var(--qy-danger);
     font-size: 13px;
 }
+
+.qy-search-head-mode {
+    color: var(--qy-muted);
+    font-size: 12px;
+    border: 1px solid var(--qy-line);
+    border-radius: 10px;
+    padding: 1px 8px;
+}

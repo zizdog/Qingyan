@@ -13,7 +13,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.2
+ * @version 2.9.3
  */
 class Qingyan_Model
 {
@@ -1335,33 +1335,55 @@ class Qingyan_Model
     }
 
     /**
-     * 截取正文摘要
+     * 解析搜索词（严格模式）
      *
-     * @param string $text
-     * @param int    $length
-     * @return string
-     */
-    /**
-     * 把用户输入的搜索词拆成若干关键词
-     *
-     * 空格（含全角空格）分隔，最多 5 个词、每个词最多 32 字 —— 再多也没有意义，
-     * 只会让 LIKE 变慢。多个词之间是 **AND**（都要命中），比 Typecho 文章搜索把
-     * 空格直接换成 `%` 的写法更宽容（那个要求词序也一致）。
+     * 规则：
+     *   · **不含空格** → 整串当作一个「短语」，必须连续、按原顺序命中；
+     *   · **含空格** → 按空格拆成多个词，每个词都要命中（AND），词序不限；
+     *   · 用双引号包起来（`"多个 词"`）→ 即使有空格也当作一个连续短语；
+     *   · 任何词少于 2 个字 → 整个查询判为无效（不再像以前那样悄悄丢掉短词，
+     *     否则「权力 的」会退化成只搜「权力」，结果变松）。
      *
      * @param string $keyword
-     * @return array
+     * @return array ['words'=>array, 'invalid'=>bool]
      */
-    protected static function searchWords($keyword)
+    protected static function parseSearchKeyword($keyword)
     {
         $keyword = trim((string) $keyword);
+        $result  = array('words' => array(), 'invalid' => false);
 
         if ('' === $keyword) {
-            return array();
+            return $result;
+        }
+
+        // 引号短语：允许短语内部带空格
+        $quoted = false;
+
+        if (preg_match('/^["“”\'](.+)["“”\']$/us', $keyword, $m)) {
+            $keyword = trim($m[1]);
+            $quoted  = true;
+        }
+
+        $len = function_exists('mb_strlen')
+            ? mb_strlen($keyword, 'UTF-8')
+            : preg_match_all('/./u', $keyword);
+
+        if ($quoted) {
+            if ($len < self::MIN_SEARCH_LEN) {
+                $result['invalid'] = true;
+
+                return $result;
+            }
+
+            $result['words'][] = function_exists('mb_substr')
+                ? mb_substr($keyword, 0, 32, 'UTF-8')
+                : substr($keyword, 0, 32);
+
+            return $result;
         }
 
         $parts = preg_split('/[\s\x{3000}]+/u', $keyword, 6, PREG_SPLIT_NO_EMPTY);
         $parts = is_array($parts) ? $parts : array();
-        $words = array();
 
         foreach ($parts as $part) {
             $part = trim($part);
@@ -1370,22 +1392,64 @@ class Qingyan_Model
                 continue;
             }
 
-            $len = function_exists('mb_strlen')
+            $plen = function_exists('mb_strlen')
                 ? mb_strlen($part, 'UTF-8')
                 : preg_match_all('/./u', $part);
 
-            // 单字（或单个字母）太宽泛：只保留 2 字以上的词，
-            // 否则「的」「了」这种会把整张表都命中。
-            if ($len < self::MIN_SEARCH_LEN) {
+            if ($plen < self::MIN_SEARCH_LEN) {
+                // 短词让整条查询无效：宁可 0 条，也不悄悄放宽成「只搜长词」
+                $result['invalid'] = true;
+
                 continue;
             }
 
-            $words[] = function_exists('mb_substr')
+            $result['words'][] = function_exists('mb_substr')
                 ? mb_substr($part, 0, 32, 'UTF-8')
                 : substr($part, 0, 32);
         }
 
-        return array_slice($words, 0, 5);
+        $result['words'] = array_slice($result['words'], 0, 5);
+
+        return $result;
+    }
+
+    /**
+     * 把用户输入的搜索词拆成若干关键词（无效查询返回空数组）
+     *
+     * @param string $keyword
+     * @return array
+     */
+    protected static function searchWords($keyword)
+    {
+        $parsed = self::parseSearchKeyword($keyword);
+
+        return empty($parsed['invalid']) ? $parsed['words'] : array();
+    }
+
+    /**
+     * 搜索模式（用于 UI 提示与排查）
+     *
+     * @param string $keyword
+     * @return string invalid|phrase|all
+     */
+    public static function searchMode($keyword)
+    {
+        $keyword = trim((string) $keyword);
+
+        if ('' === $keyword) {
+            return 'invalid';
+        }
+
+        if (!self::searchKeywordOk($keyword)) {
+            return 'invalid';
+        }
+
+        // 引号包起来的、或压根没有空格的，都是一个连续短语
+        if (preg_match('/^["“”\'](.+)["“”\']$/us', $keyword)) {
+            return 'phrase';
+        }
+
+        return preg_match('/[\s\x{3000}]/u', $keyword) ? 'all' : 'phrase';
     }
 
     /**
@@ -1398,7 +1462,9 @@ class Qingyan_Model
      */
     public static function searchKeywordOk($keyword)
     {
-        return !empty(self::searchWords($keyword));
+        $parsed = self::parseSearchKeyword($keyword);
+
+        return empty($parsed['invalid']) && !empty($parsed['words']);
     }
 
     /**

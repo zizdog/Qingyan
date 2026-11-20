@@ -10,7 +10,7 @@
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.2
+ * @version 2.9.3
  */
 
 if (!defined('__TYPECHO_ADMIN__')) {
@@ -781,7 +781,7 @@ if ('doctor' === $panelAction) {
                             <div class="typecho-list-table-row notice">
                                 <p><?php
                                     if ($searching && !Qingyan_Model::searchKeywordOk($keyword)) {
-                                        _e('关键词太短：至少输入 2 个字。');
+                                        _e('关键词太短：每个词至少 2 个字。');
                                     } elseif ($searching) {
                                         _e('没有匹配的内容。');
                                     } else {
@@ -922,7 +922,7 @@ if ('doctor' === $panelAction) {
                         <div class="typecho-list-table-row notice">
                             <p><?php
                                 if ($commentSearching && !Qingyan_Model::searchKeywordOk($commentKeyword)) {
-                                    _e('关键词太短：至少输入 2 个字。');
+                                    _e('关键词太短：每个词至少 2 个字。');
                                 } elseif ($commentSearching) {
                                     _e('没有匹配的评论。');
                                 } else {

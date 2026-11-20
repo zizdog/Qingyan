@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.2
+ * @version 2.9.3
  */
 class Qingyan_Renderer
 {
@@ -173,8 +173,8 @@ class Qingyan_Renderer
         if ('' !== $keyword) {
             if (!Qingyan_Model::searchKeywordOk($keyword)) {
                 echo '<div class="qy-empty">'
-                    . '<p>关键词「' . self::esc($keyword) . '」太短，至少输入 <b>2 个字</b>再搜。</p>'
-                    . '<p class="qy-empty-hint">单字匹配范围太大，会把整条时间线都翻出来，所以不做搜索。</p>'
+                    . '<p>关键词「' . self::esc($keyword) . '」太短：每个词至少 <b>2 个字</b>再搜。</p>'
+                    . '<p class="qy-empty-hint">单字匹配范围太大，会把整条时间线都翻出来；空格分隔的词会逐个匹配，任一短词都会让整条查询失效。</p>'
                     . '</div>' . "\n";
 
                 return;
@@ -207,8 +207,9 @@ class Qingyan_Renderer
             <span class="qy-search-head-label">在轻言里搜：<b><?php echo self::esc($ctx['keyword']); ?></b></span>
             <?php if ($qySearchOk) { ?>
             <span class="qy-search-head-count"><?php echo intval($ctx['total']); ?> 条</span>
+            <span class="qy-search-head-mode"><?php echo 'phrase' === Qingyan_Model::searchMode($ctx['keyword']) ? '整句匹配' : '全部词命中'; ?></span>
             <?php } else { ?>
-            <span class="qy-search-head-hint">关键词至少 2 个字</span>
+            <span class="qy-search-head-hint">每个词至少 2 个字</span>
             <?php } ?>
             <a class="qy-search-head-clear" href="<?php echo self::esc(Qingyan_Plugin::frontUrl()); ?>">清除</a>
             <?php if ($qySearchOk) { ?>
