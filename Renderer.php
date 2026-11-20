@@ -15,7 +15,7 @@ require_once dirname(__FILE__) . '/compat.php';
  *
  * @package Qingyan
  * @author  Yuanbao
- * @version 2.9.5
+ * @version 2.9.6
  */
 class Qingyan_Renderer
 {
@@ -72,11 +72,14 @@ class Qingyan_Renderer
          *     这时也认一下 URL 上的 ?q= —— 搜索结果页那句「在轻言里看全部」
          *     就是跳到嵌入页的，不认的话点过去会看到未过滤的时间线。
          */
-        if (array_key_exists('keyword', $opts)) {
-            $keyword = trim((string) $opts['keyword']);
-        } else {
-            $keyword = '';
+        $keyword = isset($opts['keyword']) ? trim((string) $opts['keyword']) : '';
 
+        /*
+         * 空字符串也回退到 URL 的 ?q=：
+         * 主题模板常照抄示例里的 `'keyword' => ''`（或把空默认值原样传进来），
+         * 若严格「有键就不读 URL」，嵌入页的搜索会被空串废掉（生产站踩到过）。
+         */
+        if ('' === $keyword) {
             try {
                 $keyword = trim((string) Typecho_Request::getInstance()->get('q', ''));
             } catch (Throwable $e) {
